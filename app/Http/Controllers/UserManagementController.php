@@ -21,9 +21,23 @@ class UserManagementController extends Controller
         return view('users.index', [
             'title' => 'User Management',
             'subtitle' => 'Manage user accounts, assigned roles, and access to system modules.',
-            'users' => User::query()->with('role')->latest()->paginate(10)->withQueryString(),
+            'users' => User::query()
+                ->with('role')
+                ->when($request->input('search'), function ($query, string $search): void {
+                    $query->where(function ($query) use ($search): void {
+                        $query
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('username', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhereHas('role', fn ($query) => $query->where('name', 'like', "%{$search}%"));
+                    });
+                })
+                ->latest()
+                ->paginate(10)
+                ->withQueryString(),
             'roles' => Role::query()->allowed()->orderBy('name')->get(),
             'editUser' => $request->query('edit') ? User::query()->find($request->query('edit')) : null,
+            'deletedUsers' => User::query()->onlyTrashed()->with('role')->latest('deleted_at')->get(),
         ]);
     }
 
@@ -77,13 +91,47 @@ class UserManagementController extends Controller
             return $redirect;
         }
 
+        if (! auth()->user()->canDeleteRecords()) {
+            return back()->with('error', 'Only administrators can delete records.');
+        }
+
         if ($user->id === auth()->id()) {
             return back()->with('error', 'You cannot delete your own account.');
         }
 
         $user->delete();
 
-        return back()->with('success', 'User account deleted successfully.');
+        return back()->with('success', 'User account moved to trash.');
+    }
+
+    public function restore(Request $request, int $id): RedirectResponse
+    {
+        if ($redirect = $this->redirectIfCannotAccess('users')) {
+            return $redirect;
+        }
+
+        if (! $request->user()->canDeleteRecords()) {
+            return back()->with('error', 'Only administrators can restore records.');
+        }
+
+        User::query()->onlyTrashed()->findOrFail($id)->restore();
+
+        return back()->with('success', 'User account restored successfully.');
+    }
+
+    public function forceDelete(Request $request, int $id): RedirectResponse
+    {
+        if ($redirect = $this->redirectIfCannotAccess('users')) {
+            return $redirect;
+        }
+
+        if (! $request->user()->canDeleteRecords()) {
+            return back()->with('error', 'Only administrators can permanently delete records.');
+        }
+
+        User::query()->onlyTrashed()->findOrFail($id)->forceDelete();
+
+        return back()->with('success', 'User account permanently deleted.');
     }
 
     public function toggle(User $user): RedirectResponse

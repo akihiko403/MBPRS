@@ -25,7 +25,12 @@
             <h3 style="margin:0;">User Accounts</h3>
             <div class="meta">Manage system access, roles, account status, and password resets.</div>
         </div>
-        <button class="btn" style="width:auto;" type="button" data-open-modal="user-modal">Add User</button>
+        <div class="header-actions">@if(auth()->user()->canDeleteRecords())<button class="btn secondary trash-header-btn" type="button" data-open-modal="user-trash-modal" title="Deleted Users" aria-label="Deleted Users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>@endif<button class="btn" style="width:auto;" type="button" data-open-modal="user-modal">Add User</button></div>
+        <form class="card-search" method="GET" action="{{ route('users.index') }}">
+            <input name="search" value="{{ request('search') }}" placeholder="Search name, username, email, role">
+            <div class="card-search-actions"><button class="btn" type="submit">Search</button>
+            @if(request('search'))<a class="btn secondary" href="{{ route('users.index') }}">Reset</a>@endif</div>
+        </form>
     </div>
 
     <div class="table-wrap">
@@ -51,11 +56,13 @@
                                 @method('PATCH')
                                 <button class="action-icon secondary" type="submit" title="Reset Password" aria-label="Reset Password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg></button>
                             </form>
+                            @if(auth()->user()->canDeleteRecords())
                             <form method="POST" action="{{ route('users.destroy', $user) }}" data-confirm-delete data-confirm-message="Delete this user account?" style="display:inline-flex; margin:0;">
                                 @csrf
                                 @method('DELETE')
                                 <button class="action-icon delete" type="submit" title="Delete User" aria-label="Delete User"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
                             </form>
+                            @endif
                         </div>
                     </td>
                 </tr>
@@ -68,6 +75,22 @@
     {{ $users->links() }}
 </div>
 
+@if(auth()->user()->canDeleteRecords())
+<div class="modal-backdrop" id="user-trash-modal" aria-hidden="true">
+    <div class="modal-card trash-modal-card">
+        <div class="modal-head"><div><h3 style="margin:0;">Deleted Users</h3><div class="muted">Restore or permanently delete user accounts.</div></div><button class="icon-btn" type="button" data-close-modal="user-trash-modal">Close</button></div>
+        <div class="modal-body">
+            <div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Deleted</th><th>Actions</th></tr></thead><tbody>
+            @forelse($deletedUsers as $user)
+                <tr><td>{{ $user->name }}</td><td>{{ $user->username }}</td><td>{{ $user->role?->name }}</td><td>{{ $user->deleted_at?->format('M d, Y h:i A') }}</td><td><div class="trash-actions"><form method="POST" action="{{ route('users.restore', $user->id) }}" style="display:inline-flex; margin:0;">@csrf @method('PATCH')<button class="btn secondary trash-icon-btn" type="submit" title="Restore" aria-label="Restore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg></button></form><form method="POST" action="{{ route('users.force-delete', $user->id) }}" data-confirm-delete data-confirm-message="Permanently delete this user account? This cannot be undone." style="display:inline-flex; margin:0;">@csrf @method('DELETE')<button class="btn danger trash-icon-btn" type="submit" title="Delete Forever" aria-label="Delete Forever"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button></form></div></td></tr>
+            @empty
+                <tr><td colspan="5" class="muted">No deleted users found.</td></tr>
+            @endforelse
+            </tbody></table></div>
+        </div>
+    </div>
+</div>
+@endif
 <div class="modal-backdrop {{ $editUser || $errors->any() ? 'open' : '' }}" id="user-modal" aria-hidden="true">
     <div class="modal-card">
         <div class="modal-head">

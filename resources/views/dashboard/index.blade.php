@@ -41,11 +41,16 @@
 </div>
 
 <div class="card" style="margin-top:20px;">
-    <div style="display:flex; justify-content:space-between; gap:16px; align-items:center; margin-bottom:12px;">
+    <div class="page-actions">
         <div>
             <h3 style="margin:0;">Recently Added Records</h3>
             <div class="muted">Automatic updates based on permit transactions.</div>
         </div>
+        <form class="card-search" method="GET" action="{{ route('dashboard') }}">
+                <input name="search" value="{{ request('search') }}" placeholder="Search permit ID, owner, type, category, status">
+                <div class="card-search-actions"><button class="btn" type="submit">Search</button>
+                @if(request('search'))<a class="btn secondary" href="{{ route('dashboard') }}">Reset</a>@endif</div>
+            </form>
     </div>
     <div class="table-wrap">
         <table>

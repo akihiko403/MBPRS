@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\BuildingPermit;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(): View|RedirectResponse
+    public function __invoke(Request $request): View|RedirectResponse
     {
         if ($redirect = $this->redirectIfCannotAccess('dashboard')) {
             return $redirect;
@@ -23,7 +24,12 @@ class DashboardController extends Controller
                 'approved' => BuildingPermit::query()->where('status', BuildingPermit::STATUS_APPROVED)->count(),
                 'returned_or_rejected' => BuildingPermit::query()->whereIn('status', [BuildingPermit::STATUS_REJECTED, BuildingPermit::STATUS_RETURNED])->count(),
             ],
-            'recentPermits' => BuildingPermit::query()->with(['buildingType', 'buildingCategory'])->latest()->take(8)->get(),
+            'recentPermits' => BuildingPermit::query()
+                ->with(['buildingType', 'buildingCategory'])
+                ->filter($request->only('search'))
+                ->latest()
+                ->take(8)
+                ->get(),
         ]);
     }
 }

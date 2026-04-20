@@ -30,7 +30,12 @@
             <h3 style="margin:0;">Building Type Records</h3>
             <div class="meta">Repository of building types used by permit records.</div>
         </div>
-        <button class="btn" style="width:auto;" type="button" data-open-modal="type-modal">Add Building Type</button>
+        <div class="header-actions">@if(auth()->user()->canDeleteRecords())<button class="btn secondary trash-header-btn" type="button" data-open-modal="type-trash-modal" title="Deleted Building Types" aria-label="Deleted Building Types"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>@endif<button class="btn" style="width:auto;" type="button" data-open-modal="type-modal">Add Building Type</button></div>
+        <form class="card-search" method="GET" action="{{ route('building-types.index') }}">
+            <input name="search" value="{{ request('search') }}" placeholder="Search name or description">
+            <div class="card-search-actions"><button class="btn" type="submit">Search</button>
+            @if(request('search'))<a class="btn secondary" href="{{ route('building-types.index') }}">Reset</a>@endif</div>
+        </form>
     </div>
 
     <div class="table-wrap">
@@ -45,11 +50,13 @@
                         <div class="action-icons">
                             <a class="action-icon view" href="{{ route('building-types.index', ['show' => $item->id]) }}" title="View Building Type" aria-label="View Building Type"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></a>
                             <a class="action-icon edit" href="{{ route('building-types.index', ['edit' => $item->id]) }}" title="Edit Building Type" aria-label="Edit Building Type"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="m16.5 3.5 4 4L7 21l-4 1 1-4 12.5-14.5Z"/></svg></a>
+                            @if(auth()->user()->canDeleteRecords())
                             <form method="POST" action="{{ route('building-types.destroy', $item) }}" data-confirm-delete data-confirm-message="Delete this building type?" style="display:inline-flex; margin:0;">
                                 @csrf
                                 @method('DELETE')
                                 <button class="action-icon delete" type="submit" title="Delete Building Type" aria-label="Delete Building Type"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
                             </form>
+                            @endif
                         </div>
                     </td>
                 </tr>
@@ -62,6 +69,22 @@
     {{ $items->links() }}
 </div>
 
+@if(auth()->user()->canDeleteRecords())
+<div class="modal-backdrop" id="type-trash-modal" aria-hidden="true">
+    <div class="modal-card trash-modal-card">
+        <div class="modal-head"><div><h3 style="margin:0;">Deleted Building Types</h3><div class="muted">Restore or permanently delete building type records.</div></div><button class="icon-btn" type="button" data-close-modal="type-trash-modal">Close</button></div>
+        <div class="modal-body">
+            <div class="table-wrap"><table><thead><tr><th>Name</th><th>Description</th><th>Deleted</th><th>Actions</th></tr></thead><tbody>
+            @forelse($deletedItems as $item)
+                <tr><td>{{ $item->name }}</td><td>{{ $item->description ?: '—' }}</td><td>{{ $item->deleted_at?->format('M d, Y h:i A') }}</td><td><div class="trash-actions"><form method="POST" action="{{ route('building-types.restore', $item->id) }}" style="display:inline-flex; margin:0;">@csrf @method('PATCH')<button class="btn secondary trash-icon-btn" type="submit" title="Restore" aria-label="Restore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg></button></form><form method="POST" action="{{ route('building-types.force-delete', $item->id) }}" data-confirm-delete data-confirm-message="Permanently delete this building type? This cannot be undone." style="display:inline-flex; margin:0;">@csrf @method('DELETE')<button class="btn danger trash-icon-btn" type="submit" title="Delete Forever" aria-label="Delete Forever"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button></form></div></td></tr>
+            @empty
+                <tr><td colspan="4" class="muted">No deleted building types found.</td></tr>
+            @endforelse
+            </tbody></table></div>
+        </div>
+    </div>
+</div>
+@endif
 @if($selectedItem)
 <div class="modal-backdrop open" id="type-view-modal" aria-hidden="true">
     <div class="modal-card">

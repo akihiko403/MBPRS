@@ -19,9 +19,20 @@ class BuildingTypeController extends Controller
         return view('building-types.index', [
             'title' => 'Building Type',
             'subtitle' => 'Manage building types available for permit encoding and record classification.',
-            'items' => BuildingType::query()->latest()->paginate(10)->withQueryString(),
+            'items' => BuildingType::query()
+                ->when($request->input('search'), function ($query, string $search): void {
+                    $query->where(function ($query) use ($search): void {
+                        $query
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('description', 'like', "%{$search}%");
+                    });
+                })
+                ->latest()
+                ->paginate(10)
+                ->withQueryString(),
             'selectedItem' => $request->query('show') ? BuildingType::query()->find($request->query('show')) : null,
             'editItem' => $request->query('edit') ? BuildingType::query()->find($request->query('edit')) : null,
+            'deletedItems' => BuildingType::query()->onlyTrashed()->latest('deleted_at')->get(),
         ]);
     }
 
@@ -63,12 +74,52 @@ class BuildingTypeController extends Controller
             return $redirect;
         }
 
+        if (! auth()->user()->canDeleteRecords()) {
+            return back()->with('error', 'Only administrators can delete records.');
+        }
+
         if ($buildingType->permits()->exists()) {
             return back()->with('error', 'Building type cannot be deleted because it is already used by permit records.');
         }
 
         $buildingType->delete();
 
-        return back()->with('success', 'Building type deleted successfully.');
+        return back()->with('success', 'Building type moved to trash.');
+    }
+
+    public function restore(Request $request, int $id): RedirectResponse
+    {
+        if ($redirect = $this->redirectIfCannotAccess('building-types')) {
+            return $redirect;
+        }
+
+        if (! $request->user()->canDeleteRecords()) {
+            return back()->with('error', 'Only administrators can restore records.');
+        }
+
+        BuildingType::query()->onlyTrashed()->findOrFail($id)->restore();
+
+        return back()->with('success', 'Building type restored successfully.');
+    }
+
+    public function forceDelete(Request $request, int $id): RedirectResponse
+    {
+        if ($redirect = $this->redirectIfCannotAccess('building-types')) {
+            return $redirect;
+        }
+
+        if (! $request->user()->canDeleteRecords()) {
+            return back()->with('error', 'Only administrators can permanently delete records.');
+        }
+
+        $buildingType = BuildingType::query()->onlyTrashed()->findOrFail($id);
+
+        if ($buildingType->permits()->exists()) {
+            return back()->with('error', 'Building type cannot be permanently deleted because it is already used by permit records.');
+        }
+
+        $buildingType->forceDelete();
+
+        return back()->with('success', 'Building type permanently deleted.');
     }
 }

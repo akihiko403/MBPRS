@@ -39,6 +39,7 @@ class BuildingPermitController extends Controller
             'nextPermitId' => BuildingPermit::generatePermitId(),
             'selectedPermit' => $request->query('show') ? BuildingPermit::query()->with(['buildingType', 'buildingCategory', 'statusLogs.actor', 'documents'])->find($request->query('show')) : null,
             'editPermit' => $request->query('edit') ? BuildingPermit::query()->with('documents')->find($request->query('edit')) : null,
+            'deletedPermits' => BuildingPermit::query()->onlyTrashed()->with(['buildingType', 'buildingCategory'])->latest('deleted_at')->get(),
             'readOnly' => false,
         ]);
     }
@@ -97,9 +98,45 @@ class BuildingPermitController extends Controller
             return $redirect;
         }
 
+        if (! $request->user()->canDeleteRecords()) {
+            return back()->with('error', 'Only administrators can delete records.');
+        }
+
         $buildingPermit->delete();
 
-        return redirect()->route('building-permits.index')->with('success', 'Building permit deleted successfully.');
+        return redirect()->route('building-permits.index')->with('success', 'Building permit moved to trash.');
+    }
+
+    public function restore(Request $request, int $id): RedirectResponse
+    {
+        if ($redirect = $this->redirectIfCannotAccess('building-permits')) {
+            return $redirect;
+        }
+
+        if (! $request->user()->canDeleteRecords()) {
+            return back()->with('error', 'Only administrators can restore records.');
+        }
+
+        $permit = BuildingPermit::query()->onlyTrashed()->findOrFail($id);
+        $permit->restore();
+
+        return back()->with('success', 'Building permit restored successfully.');
+    }
+
+    public function forceDelete(Request $request, int $id): RedirectResponse
+    {
+        if ($redirect = $this->redirectIfCannotAccess('building-permits')) {
+            return $redirect;
+        }
+
+        if (! $request->user()->canDeleteRecords()) {
+            return back()->with('error', 'Only administrators can permanently delete records.');
+        }
+
+        $permit = BuildingPermit::query()->onlyTrashed()->findOrFail($id);
+        $permit->forceDelete();
+
+        return back()->with('success', 'Building permit permanently deleted.');
     }
 
     public function previewDocument(Request $request, BuildingPermit $buildingPermit, BuildingPermitDocument $document): BinaryFileResponse|RedirectResponse

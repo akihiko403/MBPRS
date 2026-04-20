@@ -19,9 +19,20 @@ class BuildingCategoryController extends Controller
         return view('building-categories.index', [
             'title' => 'Building Category',
             'subtitle' => 'Manage building categories used to classify permit applications and records.',
-            'items' => BuildingCategory::query()->latest()->paginate(10)->withQueryString(),
+            'items' => BuildingCategory::query()
+                ->when($request->input('search'), function ($query, string $search): void {
+                    $query->where(function ($query) use ($search): void {
+                        $query
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('description', 'like', "%{$search}%");
+                    });
+                })
+                ->latest()
+                ->paginate(10)
+                ->withQueryString(),
             'selectedItem' => $request->query('show') ? BuildingCategory::query()->find($request->query('show')) : null,
             'editItem' => $request->query('edit') ? BuildingCategory::query()->find($request->query('edit')) : null,
+            'deletedItems' => BuildingCategory::query()->onlyTrashed()->latest('deleted_at')->get(),
         ]);
     }
 
@@ -63,12 +74,52 @@ class BuildingCategoryController extends Controller
             return $redirect;
         }
 
+        if (! auth()->user()->canDeleteRecords()) {
+            return back()->with('error', 'Only administrators can delete records.');
+        }
+
         if ($buildingCategory->permits()->exists()) {
             return back()->with('error', 'Building category cannot be deleted because it is already used by permit records.');
         }
 
         $buildingCategory->delete();
 
-        return back()->with('success', 'Building category deleted successfully.');
+        return back()->with('success', 'Building category moved to trash.');
+    }
+
+    public function restore(Request $request, int $id): RedirectResponse
+    {
+        if ($redirect = $this->redirectIfCannotAccess('building-categories')) {
+            return $redirect;
+        }
+
+        if (! $request->user()->canDeleteRecords()) {
+            return back()->with('error', 'Only administrators can restore records.');
+        }
+
+        BuildingCategory::query()->onlyTrashed()->findOrFail($id)->restore();
+
+        return back()->with('success', 'Building category restored successfully.');
+    }
+
+    public function forceDelete(Request $request, int $id): RedirectResponse
+    {
+        if ($redirect = $this->redirectIfCannotAccess('building-categories')) {
+            return $redirect;
+        }
+
+        if (! $request->user()->canDeleteRecords()) {
+            return back()->with('error', 'Only administrators can permanently delete records.');
+        }
+
+        $buildingCategory = BuildingCategory::query()->onlyTrashed()->findOrFail($id);
+
+        if ($buildingCategory->permits()->exists()) {
+            return back()->with('error', 'Building category cannot be permanently deleted because it is already used by permit records.');
+        }
+
+        $buildingCategory->forceDelete();
+
+        return back()->with('success', 'Building category permanently deleted.');
     }
 }

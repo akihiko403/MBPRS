@@ -19,7 +19,7 @@ class ReportController extends Controller
         }
 
         $reportType = $request->input('report_type', 'approved');
-        $filters = $request->only(['month', 'year', 'barangay', 'city_municipality', 'province', 'status', 'date_from', 'date_to', 'building_type_id', 'building_category_id']);
+        $filters = $request->only(['search', 'month', 'year', 'barangay', 'city_municipality', 'province', 'status', 'date_from', 'date_to', 'building_type_id', 'building_category_id']);
 
         return view('reports.index', [
             'title' => 'Reports',
@@ -43,7 +43,7 @@ class ReportController extends Controller
         }
 
         $reportType = $request->input('report_type', 'approved');
-        $filters = $request->only(['month', 'year', 'barangay', 'city_municipality', 'province', 'status', 'date_from', 'date_to', 'building_type_id', 'building_category_id']);
+        $filters = $request->only(['search', 'month', 'year', 'barangay', 'city_municipality', 'province', 'status', 'date_from', 'date_to', 'building_type_id', 'building_category_id']);
         $records = $this->reportQuery($reportType, $filters)
             ->with(['buildingType', 'buildingCategory'])
             ->latest()

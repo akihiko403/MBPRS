@@ -11,7 +11,7 @@ use Illuminate\View\View;
 
 class PermitApprovalController extends Controller
 {
-    public function index(): View|RedirectResponse
+    public function index(Request $request): View|RedirectResponse
     {
         if ($redirect = $this->redirectIfMissingRole(Role::ADMIN, Role::ADMINISTRATOR)) {
             return $redirect;
@@ -22,9 +22,11 @@ class PermitApprovalController extends Controller
             'subtitle' => 'Review pending permit applications and update their approval status.',
             'pendingPermits' => BuildingPermit::query()
                 ->with(['buildingType', 'buildingCategory'])
+                ->filter($request->only('search'))
                 ->where('status', BuildingPermit::STATUS_PENDING)
                 ->latest()
-                ->paginate(10),
+                ->paginate(10)
+                ->withQueryString(),
         ]);
     }
 

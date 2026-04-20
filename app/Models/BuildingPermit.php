@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
 class BuildingPermit extends Model
 {
+    use SoftDeletes;
+
     public const STATUS_PENDING = 'Pending';
     public const STATUS_APPROVED = 'Approved';
     public const STATUS_REJECTED = 'Rejected';
@@ -53,7 +56,7 @@ class BuildingPermit extends Model
     {
         $monthPrefix = 'MBPR-'.now()->format('Ym');
         $prefix = 'MBPR-'.now()->format('Ymd');
-        $latest = self::query()
+        $latest = self::withTrashed()
             ->where(function (Builder $query) use ($monthPrefix) {
                 $query->where('permit_id', 'like', $monthPrefix.'__-%')
                     ->orWhere('permit_id', 'like', $monthPrefix.'-%');
@@ -79,7 +82,13 @@ class BuildingPermit extends Model
                     $nested->where('permit_id', 'like', "%{$search}%")
                         ->orWhere('owner_last_name', 'like', "%{$search}%")
                         ->orWhere('owner_first_name', 'like', "%{$search}%")
-                        ->orWhereRaw("owner_last_name || ', ' || owner_first_name LIKE ?", ["%{$search}%"]);
+                        ->orWhere('status', 'like', "%{$search}%")
+                        ->orWhere('barangay', 'like', "%{$search}%")
+                        ->orWhere('city_municipality', 'like', "%{$search}%")
+                        ->orWhere('province', 'like', "%{$search}%")
+                        ->orWhereRaw("owner_last_name || ', ' || owner_first_name LIKE ?", ["%{$search}%"])
+                        ->orWhereHas('buildingType', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('buildingCategory', fn (Builder $query) => $query->where('name', 'like', "%{$search}%"));
                 });
             })
             ->when($filters['status'] ?? null, fn (Builder $builder, string $status) => $builder->where('status', $status))
@@ -146,7 +155,11 @@ class BuildingPermit extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $permit): void {
-            $permit->documents->each(function (BuildingPermitDocument $document): void {
+            if (! $permit->isForceDeleting()) {
+                return;
+            }
+
+            $permit->documents()->get()->each(function (BuildingPermitDocument $document): void {
                 Storage::disk('local')->delete($document->path);
             });
         });

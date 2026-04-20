@@ -4,21 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'Municipal Building Permit Repository System' }}</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
         :root { --card:#fff; --ink:#17302a; --muted:#60756f; --line:#d7e1dd; --brand:#1f6f5f; --brand-soft:#d8ebe4; --warn:#d97706; --danger:#b91c1c; }
         * { box-sizing:border-box; }
+        [x-cloak] { display:none !important; }
         body { margin:0; font-family:'Poppins', sans-serif; background:linear-gradient(180deg,#f8fbf9,#eef3f0); color:var(--ink); }
         a { color:inherit; text-decoration:none; }
         .shell { display:grid; grid-template-columns:280px 1fr; min-height:100vh; }
         .sidebar { background:#163932; color:#eef7f4; padding:28px 22px; }
-        .brand { font-size:1.3rem; font-weight:700; line-height:1.3; margin-bottom:24px; }
-        .brand small { display:block; color:#bfd5cf; font-size:.82rem; margin-top:6px; }
+        .brand { display:flex; flex-direction:column; align-items:flex-start; gap:12px; font-size:1.3rem; font-weight:700; line-height:1.3; margin-bottom:18px; }
+        .brand-logo { width:58px; height:58px; object-fit:cover; border-radius:12px; }
+        .brand-logo.centered { align-self:center; }
+        .sidebar-divider { display:block; width:100%; height:1px; background:rgba(255,255,255,.72); margin:0 0 24px; }
         .nav-link { display:block; padding:12px 14px; border-radius:12px; margin-bottom:8px; color:#d6e6e1; }
         .nav-link:hover,.nav-link.active { background:rgba(255,255,255,.1); color:#fff; }
         .main { padding:28px; }
         .topbar { display:flex; justify-content:space-between; gap:16px; align-items:center; margin-bottom:24px; }
+        .topbar-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-left:auto; }
+        .user-dropdown { position:relative; display:flex; justify-content:flex-end; flex:0 0 auto; }
+        .user-dropdown-trigger { display:inline-flex; align-items:center; gap:8px; width:auto; min-height:42px; padding:7px 11px 7px 7px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); cursor:pointer; box-shadow:0 8px 18px rgba(17,24,39,.04); font-weight:600; white-space:nowrap; }
+        .user-avatar { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; overflow:hidden; border-radius:50%; background:#eef3f0; color:var(--muted); font-size:.78rem; font-weight:700; text-transform:uppercase; }
+        .user-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+        .user-avatar-fallback { display:inline-flex; align-items:center; justify-content:center; width:100%; height:100%; }
+        .user-dropdown-arrow { width:16px; height:16px; transition:transform .18s ease; color:var(--muted); }
+        .user-dropdown-arrow.open { transform:rotate(180deg); }
+        .user-dropdown-menu { position:absolute; right:0; top:calc(100% + 8px); width:210px; padding:8px; border:1px solid var(--line); border-radius:10px; background:#fff; box-shadow:0 18px 50px rgba(17,24,39,.16); z-index:1000; transform-origin:top right; }
+        .user-dropdown-item { display:flex; width:100%; align-items:center; padding:10px 11px; border:0; border-radius:8px; background:transparent; color:var(--ink); text-align:left; cursor:pointer; font:inherit; font-size:.94rem; }
+        .user-dropdown-item:hover { background:#eef6f3; }
+        .user-dropdown-item.danger { color:var(--danger); }
+        .notification-dropdown { position:relative; flex:0 0 auto; }
+        .notification-trigger { position:relative; display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; padding:0; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--muted); cursor:pointer; box-shadow:0 8px 18px rgba(17,24,39,.04); }
+        .notification-trigger:hover { color:var(--brand); background:#f8fbf9; }
+        .notification-trigger svg { width:20px; height:20px; }
+        .notification-badge { position:absolute; top:5px; right:5px; min-width:16px; height:16px; padding:0 4px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; background:#dc2626; color:#fff; font-size:.62rem; font-weight:700; line-height:1; }
+        .notification-menu { position:absolute; right:0; top:calc(100% + 8px); width:min(340px, calc(100vw - 36px)); max-height:430px; overflow:auto; padding:8px; border:1px solid var(--line); border-radius:12px; background:#fff; box-shadow:0 18px 50px rgba(17,24,39,.16); z-index:1000; transform-origin:top right; }
+        .notification-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 10px 10px; border-bottom:1px solid var(--line); }
+        .notification-head div { display:grid; gap:2px; }
+        .notification-head span { color:var(--muted); font-size:.8rem; }
+        .notification-clear { width:auto; min-height:30px; padding:6px 10px; border:0; border-radius:8px; background:var(--brand-soft); color:var(--brand); cursor:pointer; font-size:.8rem; font-weight:700; }
+        .notification-clear:hover { background:#c7e1d8; }
+        .notification-item { display:grid; grid-template-columns:8px 1fr; gap:10px; padding:10px; border-radius:9px; }
+        .notification-item:hover { background:#eef6f3; }
+        .notification-item strong { display:block; font-size:.88rem; }
+        .notification-item small { display:block; color:var(--muted); font-size:.78rem; line-height:1.35; margin-top:2px; }
+        .notification-item em { display:block; color:#8a9995; font-size:.72rem; font-style:normal; margin-top:4px; }
+        .notification-dot { width:8px; height:8px; margin-top:5px; border-radius:999px; background:var(--brand); }
+        .notification-empty { padding:18px 10px; color:var(--muted); text-align:center; font-size:.9rem; }
+        .dropdown-enter { transition:opacity .16s ease, transform .16s ease; }
+        .dropdown-enter-start { opacity:0; transform:translateY(-4px) scale(.98); }
+        .dropdown-enter-end { opacity:1; transform:translateY(0) scale(1); }
+        .dropdown-leave { transition:opacity .12s ease, transform .12s ease; }
+        .dropdown-leave-start { opacity:1; transform:translateY(0) scale(1); }
+        .dropdown-leave-end { opacity:0; transform:translateY(-4px) scale(.98); }
         .page-title { font-size:1.7rem; margin:0; }
+        .card .page-actions { display:grid !important; grid-template-columns:minmax(0, 1fr) auto; align-items:start !important; gap:10px 16px; }
+        .page-actions > div:first-child { min-width:0; }
+        .page-actions > .btn, .page-actions > .stack, .page-actions > .header-actions { justify-self:end; align-self:start; margin-right:0; }
+        .page-actions > .card-search { grid-column:1 / -1; }
         .muted { color:var(--muted); }
         .grid { display:grid; gap:20px; }
         .grid.cols-2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -42,6 +86,23 @@
         .btn.danger { background:#fef2f2; color:var(--danger); border:1px solid #fca5a5; }
         .btn.small { padding:8px 10px; font-size:.88rem; }
         .stack { display:flex; gap:10px; flex-wrap:wrap; }
+        .header-actions { display:flex; justify-content:flex-end; gap:10px; align-items:center; }
+        .trash-header-btn { display:inline-flex; align-items:center; justify-content:center; width:46px; height:46px; min-width:46px; padding:0; border-radius:10px; }
+        .trash-header-btn svg { width:18px; height:18px; }
+        .trash-actions { display:flex; gap:6px; align-items:center; flex-wrap:nowrap; }
+        .trash-actions .btn { width:auto; }
+        .trash-modal-card { width:min(780px, 100%); }
+        .trash-modal-card .modal-head { padding:18px 20px; }
+        .trash-modal-card .modal-body { padding:16px 20px 20px; }
+        .trash-modal-card table { font-size:.9rem; }
+        .trash-modal-card th, .trash-modal-card td { padding:9px 10px; vertical-align:middle; }
+        .trash-modal-card .badge { padding:5px 9px; font-size:.76rem; }
+        .trash-icon-btn { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; min-width:34px; padding:0; border-radius:8px; }
+        .trash-icon-btn svg { width:16px; height:16px; }
+        .card-search { display:grid; grid-template-columns:minmax(240px, 1fr) auto; align-items:center; gap:8px; width:100%; margin-top:0; }
+        .card-search input { min-height:40px; padding:8px 11px; border-radius:10px; font-size:.92rem; }
+        .card-search .btn, .card-search a { display:inline-flex; align-items:center; justify-content:center; width:auto; min-height:40px; padding:8px 12px; border-radius:10px; white-space:nowrap; font-size:.9rem; }
+        .card-search-actions { display:flex; justify-content:flex-end; gap:8px; justify-self:end; }
         .badge { display:inline-flex; padding:6px 10px; border-radius:999px; font-size:.82rem; font-weight:700; }
         .badge.Pending { background:#fef3c7; color:#92400e; }
         .badge.Approved { background:#dcfce7; color:#166534; }
@@ -63,15 +124,28 @@
         .delete-modal-actions { justify-content:flex-end; }
         .delete-modal-actions .btn { width:auto; }
         @media (max-width:920px){ .shell,.login-card,.grid.cols-2,.grid.cols-3,.grid.cols-4,.form-grid{ grid-template-columns:1fr; } .main{ padding:18px; } }
+        @media (max-width:640px){ .card-search { grid-template-columns:1fr; } .card-search-actions { width:100%; } .card-search .btn, .card-search a { width:100%; } }
     </style>
 </head>
 <body>
+@php
+    $systemSettings = \App\Models\SystemSetting::current();
+    $systemLogoUrl = $systemSettings->system_logo_path
+        ? asset('storage/' . $systemSettings->system_logo_path).'?v='.$systemSettings->updated_at?->timestamp
+        : null;
+@endphp
 @if (!empty($loginPage))
     @yield('content')
 @else
     <div class="shell">
         <aside class="sidebar">
-            <div class="brand">Municipal Building Permit Repository System<small>{{ auth()->user()->name }} · {{ auth()->user()->role?->name }}</small></div>
+            <div class="brand">
+                @if($systemLogoUrl)
+                    <img class="brand-logo centered" src="{{ $systemLogoUrl }}" alt="">
+                @endif
+                <span>{{ $systemSettings->system_name }}</span>
+            </div>
+            <div class="sidebar-divider" aria-hidden="true"></div>
             @php($links = [
                 ['label' => 'Dashboard', 'route' => 'dashboard', 'module' => 'dashboard'],
                 ['label' => 'Building Permit', 'route' => 'building-permits.index', 'module' => 'building-permits'],
@@ -79,6 +153,7 @@
                 ['label' => 'Building Category', 'route' => 'building-categories.index', 'module' => 'building-categories'],
                 ['label' => 'Permit Approval', 'route' => 'permit-approvals.index', 'module' => 'permit-approvals'],
                 ['label' => 'Reports', 'route' => 'reports.index', 'module' => 'reports'],
+                ['label' => 'Audit Log', 'route' => 'audit-logs.index', 'module' => 'audit-logs'],
                 ['label' => 'User Management', 'route' => 'users.index', 'module' => 'users'],
             ])
             @foreach ($links as $link)
@@ -93,7 +168,10 @@
                     <h1 class="page-title">{{ $title ?? 'Module' }}</h1>
                     @isset($subtitle)<div class="muted">{{ $subtitle }}</div>@endisset
                 </div>
-                <form action="{{ route('logout') }}" method="POST">@csrf<button class="btn secondary" type="submit">Logout</button></form>
+                <div class="topbar-actions">
+                    <x-notification-dropdown />
+                    <x-user-dropdown />
+                </div>
             </div>
             @if (session('success'))<div class="alert success">{{ session('success') }}</div>@endif
             @if (session('error'))<div class="alert error">{{ session('error') }}</div>@endif
@@ -112,7 +190,6 @@
             </div>
         </div>
     </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const deleteModal = document.getElementById('delete-confirmation-modal');
@@ -134,15 +211,17 @@
             document.addEventListener('submit', function (event) {
                 const form = event.target;
 
-                if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm-delete') || form.dataset.deleteConfirmed === 'true') {
+                if (!(form instanceof HTMLFormElement)) {
                     return;
                 }
 
-                event.preventDefault();
-                pendingDeleteForm = form;
-                deleteMessage.textContent = form.getAttribute('data-confirm-message') || 'Are you sure you want to delete this record?';
-                deleteModal.classList.add('open');
-                deleteModal.setAttribute('aria-hidden', 'false');
+                if (form.hasAttribute('data-confirm-delete') && form.dataset.deleteConfirmed !== 'true') {
+                    event.preventDefault();
+                    pendingDeleteForm = form;
+                    deleteMessage.textContent = form.getAttribute('data-confirm-message') || 'Are you sure you want to delete this record?';
+                    deleteModal.classList.add('open');
+                    deleteModal.setAttribute('aria-hidden', 'false');
+                }
             }, true);
 
             deleteSubmit.addEventListener('click', function () {

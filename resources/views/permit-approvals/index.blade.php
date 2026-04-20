@@ -29,6 +29,11 @@
             <h3 style="margin:0;">Pending Building Permits</h3>
             <div class="meta">Review and update pending permit applications.</div>
         </div>
+        <form class="card-search" method="GET" action="{{ route('permit-approvals.index') }}">
+            <input name="search" value="{{ request('search') }}" placeholder="Search permit ID, owner, type, category">
+            <div class="card-search-actions"><button class="btn" type="submit">Search</button>
+            @if(request('search'))<a class="btn secondary" href="{{ route('permit-approvals.index') }}">Reset</a>@endif</div>
+        </form>
     </div>
 
     <div class="table-wrap">

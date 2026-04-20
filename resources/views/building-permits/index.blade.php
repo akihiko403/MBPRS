@@ -127,6 +127,9 @@
     .document-preview-empty p { margin:0 0 14px; color:var(--muted); }
     .document-preview-tools { display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
     .document-preview-tools .btn { width:auto; min-width:0; }
+    .header-actions { display:flex; justify-content:flex-end; gap:10px; align-items:center; }
+    .trash-header-btn { display:inline-flex; align-items:center; justify-content:center; width:46px; height:46px; min-width:46px; padding:0; border-radius:10px; }
+    .trash-header-btn svg { width:18px; height:18px; }
 </style>
 
 <div class="card">
@@ -135,9 +138,22 @@
             <h3 style="margin:0;">Building Permit Records</h3>
             <div class="meta">A simplified permit repository view focused on encoded records.</div>
         </div>
-        @unless($readOnly)
-            <button class="btn" style="width:auto;" type="button" data-open-modal="permit-modal">Add Building Permit</button>
-        @endunless
+        <div class="header-actions">
+            @if(auth()->user()->canDeleteRecords())
+                <button class="btn secondary trash-header-btn" type="button" data-open-modal="permit-trash-modal" title="Deleted Building Permits" aria-label="Deleted Building Permits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
+            @endif
+            @unless($readOnly)
+                <button class="btn" style="width:auto;" type="button" data-open-modal="permit-modal">Add Building Permit</button>
+            @endunless
+        </div>
+        <form class="card-search" method="GET" action="{{ route('building-permits.index') }}">
+            @foreach(request()->except(['search', 'page', 'edit', 'show']) as $key => $value)
+                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+            @endforeach
+            <input name="search" value="{{ request('search') }}" placeholder="Search permit ID, owner, type, category, status">
+            <div class="card-search-actions"><button class="btn" type="submit">Search</button>
+            </div>@if(request('search'))<a class="btn secondary" href="{{ route('building-permits.index', request()->except(['search', 'page', 'edit', 'show'])) }}">Reset</a>@endif
+        </form>
     </div>
 
     <div class="table-wrap">
@@ -156,11 +172,13 @@
                             <a class="action-icon view" href="{{ route('building-permits.index', ['show' => $permit->id]) }}" title="View Details" aria-label="View Details"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></a>
                             @unless($readOnly)
                                 <a class="action-icon edit" href="{{ route('building-permits.index', ['edit' => $permit->id]) }}" title="Edit Permit" aria-label="Edit Permit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="m16.5 3.5 4 4L7 21l-4 1 1-4 12.5-14.5Z"/></svg></a>
+                                @if(auth()->user()->canDeleteRecords())
                                 <form method="POST" action="{{ route('building-permits.destroy', $permit) }}" data-confirm-delete data-confirm-message="Delete this building permit?" style="display:inline-flex; margin:0;">
                                     @csrf
                                     @method('DELETE')
                                     <button class="action-icon delete" type="submit" title="Delete Permit" aria-label="Delete Permit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
                                 </form>
+                                @endif
                             @endunless
                         </div>
                     </td>
@@ -174,6 +192,52 @@
     {{ $permits->links() }}
 </div>
 
+@if(auth()->user()->canDeleteRecords())
+<div class="modal-backdrop" id="permit-trash-modal" aria-hidden="true">
+    <div class="modal-card trash-modal-card">
+        <div class="modal-head">
+            <div>
+                <h3 style="margin:0;">Deleted Building Permits</h3>
+                <div class="muted">Restore deleted permits or permanently remove records.</div>
+            </div>
+            <button class="icon-btn" type="button" data-close-modal="permit-trash-modal">Close</button>
+        </div>
+        <div class="modal-body">
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Permit ID</th><th>Owner</th><th>Status</th><th>Deleted</th><th>Actions</th></tr></thead>
+                    <tbody>
+                    @forelse($deletedPermits as $permit)
+                        <tr>
+                            <td>{{ $permit->permit_id }}</td>
+                            <td>{{ $permit->owner_full_name }}</td>
+                            <td><span class="badge {{ $permit->status }}">{{ $permit->status }}</span></td>
+                            <td>{{ $permit->deleted_at?->format('M d, Y h:i A') }}</td>
+                            <td>
+                                <div class="trash-actions">
+                                    <form method="POST" action="{{ route('building-permits.restore', $permit->id) }}" style="display:inline-flex; margin:0;">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button class="btn secondary trash-icon-btn" type="submit" title="Restore" aria-label="Restore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg></button>
+                                    </form>
+                                    <form method="POST" action="{{ route('building-permits.force-delete', $permit->id) }}" data-confirm-delete data-confirm-message="Permanently delete this building permit? This cannot be undone." style="display:inline-flex; margin:0;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn danger trash-icon-btn" type="submit" title="Delete Forever" aria-label="Delete Forever"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="muted">No deleted building permits found.</td></tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 @if($selectedPermit)
 <div class="modal-backdrop open" id="permit-view-modal" aria-hidden="true">
     <div class="modal-card">

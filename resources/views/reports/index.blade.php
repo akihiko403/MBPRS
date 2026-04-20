@@ -63,6 +63,14 @@
             <a class="btn secondary report-action" href="{{ route('reports.export', request()->query()) }}">Export Excel/CSV</a>
             <button class="btn secondary report-action" onclick="window.print()" type="button">Print Report</button>
         </div>
+        <form class="card-search" method="GET" action="{{ route('reports.index') }}">
+            @foreach(request()->except(['search']) as $key => $value)
+                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+            @endforeach
+            <input name="search" value="{{ request('search') }}" placeholder="Search permit ID, owner, location, status">
+            <div class="card-search-actions"><button class="btn" type="submit">Search</button>
+            </div>@if(request('search'))<a class="btn secondary" href="{{ route('reports.index', request()->except('search')) }}">Reset</a>@endif
+        </form>
     </div>
     <div class="table-wrap">
         <table>
