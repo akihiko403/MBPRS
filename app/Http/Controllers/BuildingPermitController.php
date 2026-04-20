@@ -24,18 +24,29 @@ class BuildingPermitController extends Controller
             return $redirect;
         }
 
+        $filters = $request->only(['search', 'status', 'building_type_id', 'building_category_id', 'sort']);
+        $permitsQuery = BuildingPermit::query()
+            ->with(['buildingType', 'buildingCategory', 'creator', 'approver'])
+            ->filter($filters);
+
+        match ($filters['sort'] ?? null) {
+            'owner_az' => $permitsQuery->orderBy('owner_last_name')->orderBy('owner_first_name'),
+            'owner_za' => $permitsQuery->orderByDesc('owner_last_name')->orderByDesc('owner_first_name'),
+            'permit_az' => $permitsQuery->orderBy('permit_id'),
+            'permit_za' => $permitsQuery->orderByDesc('permit_id'),
+            default => $permitsQuery->latest(),
+        };
+
         return view('building-permits.index', [
             'title' => 'Building Permit',
             'subtitle' => 'Manage building permit records, attached documents, and permit status updates.',
-            'permits' => BuildingPermit::query()
-                ->with(['buildingType', 'buildingCategory', 'creator', 'approver'])
-                ->filter($request->only(['search', 'status', 'building_type_id', 'building_category_id']))
-                ->latest()
+            'permits' => $permitsQuery
                 ->paginate(10)
                 ->withQueryString(),
             'buildingTypes' => BuildingType::query()->orderBy('name')->get(),
             'buildingCategories' => BuildingCategory::query()->orderBy('name')->get(),
             'statuses' => BuildingPermit::statuses(),
+            'filters' => $filters,
             'nextPermitId' => BuildingPermit::generatePermitId(),
             'selectedPermit' => $request->query('show') ? BuildingPermit::query()->with(['buildingType', 'buildingCategory', 'statusLogs.actor', 'documents'])->find($request->query('show')) : null,
             'editPermit' => $request->query('edit') ? BuildingPermit::query()->with('documents')->find($request->query('edit')) : null,

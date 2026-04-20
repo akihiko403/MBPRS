@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\BackupRestoreController;
 use App\Http\Controllers\BuildingCategoryController;
 use App\Http\Controllers\BuildingPermitController;
 use App\Http\Controllers\BuildingTypeController;
@@ -25,6 +26,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::get('/settings', SettingsController::class)->name('settings');
     Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::get('/backup-restore', [BackupRestoreController::class, 'index'])->name('backup-restore.index');
+    Route::post('/backup-restore/backup', [BackupRestoreController::class, 'backup'])->name('backup-restore.backup');
+    Route::post('/backup-restore/restore', [BackupRestoreController::class, 'restore'])->name('backup-restore.restore');
     Route::post('/notifications/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 

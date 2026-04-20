@@ -42,6 +42,7 @@
 
         @if($isAdministrator)
             <a class="user-dropdown-item" href="{{ route('settings') }}">Settings</a>
+            <a class="user-dropdown-item" href="{{ route('backup-restore.index') }}">Backup & Restore</a>
         @endif
 
         <form method="POST" action="{{ route('logout') }}">

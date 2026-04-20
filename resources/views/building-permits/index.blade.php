@@ -130,6 +130,12 @@
     .header-actions { display:flex; justify-content:flex-end; gap:10px; align-items:center; }
     .trash-header-btn { display:inline-flex; align-items:center; justify-content:center; width:46px; height:46px; min-width:46px; padding:0; border-radius:10px; }
     .trash-header-btn svg { width:18px; height:18px; }
+    .permit-filter-form { grid-column:1 / -1; display:grid; grid-template-columns:minmax(280px, 1fr) repeat(4, minmax(140px, 180px)) auto; gap:8px; width:100%; }
+    .permit-filter-form input, .permit-filter-form select, .permit-filter-form .btn { min-height:40px; padding:8px 11px; border-radius:10px; font-size:.9rem; }
+    .permit-filter-form .btn { display:inline-flex; align-items:center; justify-content:center; width:auto; white-space:nowrap; }
+    .permit-filter-actions { display:flex; justify-content:flex-end; gap:8px; }
+    @media (max-width:1180px) { .permit-filter-form { grid-template-columns:repeat(2, minmax(0, 1fr)); } .permit-filter-actions { justify-content:flex-start; } }
+    @media (max-width:640px) { .permit-filter-form { grid-template-columns:1fr; } .permit-filter-actions, .permit-filter-form .btn { width:100%; } }
 </style>
 
 <div class="card">
@@ -146,13 +152,39 @@
                 <button class="btn" style="width:auto;" type="button" data-open-modal="permit-modal">Add Building Permit</button>
             @endunless
         </div>
-        <form class="card-search" method="GET" action="{{ route('building-permits.index') }}">
-            @foreach(request()->except(['search', 'page', 'edit', 'show']) as $key => $value)
-                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
-            @endforeach
+        <form class="permit-filter-form" method="GET" action="{{ route('building-permits.index') }}">
             <input name="search" value="{{ request('search') }}" placeholder="Search permit ID, owner, type, category, status">
-            <div class="card-search-actions"><button class="btn" type="submit">Search</button>
-            </div>@if(request('search'))<a class="btn secondary" href="{{ route('building-permits.index', request()->except(['search', 'page', 'edit', 'show'])) }}">Reset</a>@endif
+            <select name="sort" aria-label="Alphabetical order">
+                <option value="">Latest First</option>
+                <option value="owner_az" @selected(request('sort') === 'owner_az')>Owner A-Z</option>
+                <option value="owner_za" @selected(request('sort') === 'owner_za')>Owner Z-A</option>
+                <option value="permit_az" @selected(request('sort') === 'permit_az')>Permit ID A-Z</option>
+                <option value="permit_za" @selected(request('sort') === 'permit_za')>Permit ID Z-A</option>
+            </select>
+            <select name="status" aria-label="Status">
+                <option value="">All Status</option>
+                @foreach($statuses as $status)
+                    <option value="{{ $status }}" @selected(request('status') === $status)>{{ $status }}</option>
+                @endforeach
+            </select>
+            <select name="building_type_id" aria-label="Building type">
+                <option value="">All Types</option>
+                @foreach($buildingTypes as $type)
+                    <option value="{{ $type->id }}" @selected((string) request('building_type_id') === (string) $type->id)>{{ $type->name }}</option>
+                @endforeach
+            </select>
+            <select name="building_category_id" aria-label="Building category">
+                <option value="">All Categories</option>
+                @foreach($buildingCategories as $category)
+                    <option value="{{ $category->id }}" @selected((string) request('building_category_id') === (string) $category->id)>{{ $category->name }}</option>
+                @endforeach
+            </select>
+            <div class="permit-filter-actions">
+                <button class="btn" type="submit">Search</button>
+                @if(request()->hasAny(['search', 'sort', 'status', 'building_type_id', 'building_category_id']))
+                    <a class="btn secondary" href="{{ route('building-permits.index') }}">Reset</a>
+                @endif
+            </div>
         </form>
     </div>
 

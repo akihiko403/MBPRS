@@ -28,6 +28,7 @@
             str_contains($description, 'users.toggle') => ['User Status Updated', 'A user account status was changed.'],
             str_contains($description, 'profile.update') => ['Profile Updated', 'An account profile was changed.'],
             str_contains($description, 'settings.update') => ['System Settings Updated', 'System identity details were changed.'],
+            str_contains($description, 'backup-restore.restore') => ['Database Restored', 'A database backup was restored.'],
             str_contains($description, 'building-categories.store') => ['Building Category Added', 'A new building category was added.'],
             str_contains($description, 'building-categories.update') => ['Building Category Updated', 'A building category was changed.'],
             str_contains($description, 'building-types.store') => ['Building Type Added', 'A new building type was added.'],

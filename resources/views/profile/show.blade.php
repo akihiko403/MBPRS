@@ -9,7 +9,7 @@
 @endphp
 
 <div class="card">
-    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" data-confirm-save data-save-message="Save these profile changes?">
         @csrf
         @method('PATCH')
 

@@ -21,8 +21,10 @@
         .nav-link { display:block; padding:12px 14px; border-radius:12px; margin-bottom:8px; color:#d6e6e1; }
         .nav-link:hover,.nav-link.active { background:rgba(255,255,255,.1); color:#fff; }
         .main { padding:28px; }
-        .topbar { display:flex; justify-content:space-between; gap:16px; align-items:center; margin-bottom:24px; }
-        .topbar-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-left:auto; }
+        .topbar { display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:16px; align-items:center; min-height:58px; margin-bottom:24px; }
+        .topbar-heading { min-width:0; display:grid; gap:4px; align-content:center; }
+        .topbar-subtitle { min-height:22px; font-size:.98rem; line-height:1.4; }
+        .topbar-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-left:auto; min-width:max-content; }
         .user-dropdown { position:relative; display:flex; justify-content:flex-end; flex:0 0 auto; }
         .user-dropdown-trigger { display:inline-flex; align-items:center; gap:8px; width:auto; min-height:42px; padding:7px 11px 7px 7px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); cursor:pointer; box-shadow:0 8px 18px rgba(17,24,39,.04); font-weight:600; white-space:nowrap; }
         .user-avatar { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; overflow:hidden; border-radius:50%; background:#eef3f0; color:var(--muted); font-size:.78rem; font-weight:700; text-transform:uppercase; }
@@ -37,7 +39,7 @@
         .notification-dropdown { position:relative; flex:0 0 auto; }
         .notification-trigger { position:relative; display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; padding:0; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--muted); cursor:pointer; box-shadow:0 8px 18px rgba(17,24,39,.04); }
         .notification-trigger:hover { color:var(--brand); background:#f8fbf9; }
-        .notification-trigger svg { width:20px; height:20px; }
+        .notification-trigger svg { width:24px; height:24px; }
         .notification-badge { position:absolute; top:5px; right:5px; min-width:16px; height:16px; padding:0 4px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; background:#dc2626; color:#fff; font-size:.62rem; font-weight:700; line-height:1; }
         .notification-menu { position:absolute; right:0; top:calc(100% + 8px); width:min(340px, calc(100vw - 36px)); max-height:430px; overflow:auto; padding:8px; border:1px solid var(--line); border-radius:12px; background:#fff; box-shadow:0 18px 50px rgba(17,24,39,.16); z-index:1000; transform-origin:top right; }
         .notification-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 10px 10px; border-bottom:1px solid var(--line); }
@@ -58,7 +60,7 @@
         .dropdown-leave { transition:opacity .12s ease, transform .12s ease; }
         .dropdown-leave-start { opacity:1; transform:translateY(0) scale(1); }
         .dropdown-leave-end { opacity:0; transform:translateY(-4px) scale(.98); }
-        .page-title { font-size:1.7rem; margin:0; }
+        .page-title { font-size:1.7rem; line-height:1.2; margin:0; min-height:33px; }
         .card .page-actions { display:grid !important; grid-template-columns:minmax(0, 1fr) auto; align-items:start !important; gap:10px 16px; }
         .page-actions > div:first-child { min-width:0; }
         .page-actions > .btn, .page-actions > .stack, .page-actions > .header-actions { justify-self:end; align-self:start; margin-right:0; }
@@ -121,9 +123,9 @@
         .global-modal-card { width:min(420px, 100%); background:#fff; border-radius:22px; border:1px solid var(--line); box-shadow:0 24px 80px rgba(0,0,0,.18); padding:24px; }
         .global-modal-title { margin:0 0 8px; font-size:1.2rem; }
         .global-modal-text { margin:0 0 18px; color:var(--muted); line-height:1.5; }
-        .delete-modal-actions { justify-content:flex-end; }
-        .delete-modal-actions .btn { width:auto; }
-        @media (max-width:920px){ .shell,.login-card,.grid.cols-2,.grid.cols-3,.grid.cols-4,.form-grid{ grid-template-columns:1fr; } .main{ padding:18px; } }
+        .delete-modal-actions, .save-modal-actions { justify-content:flex-end; }
+        .delete-modal-actions .btn, .save-modal-actions .btn { width:auto; }
+        @media (max-width:920px){ .shell,.login-card,.grid.cols-2,.grid.cols-3,.grid.cols-4,.form-grid{ grid-template-columns:1fr; } .main{ padding:18px; } .topbar{ align-items:start; } }
         @media (max-width:640px){ .card-search { grid-template-columns:1fr; } .card-search-actions { width:100%; } .card-search .btn, .card-search a { width:100%; } }
     </style>
 </head>
@@ -164,9 +166,9 @@
         </aside>
         <main class="main">
             <div class="topbar">
-                <div>
+                <div class="topbar-heading">
                     <h1 class="page-title">{{ $title ?? 'Module' }}</h1>
-                    @isset($subtitle)<div class="muted">{{ $subtitle }}</div>@endisset
+                    <div class="muted topbar-subtitle">{{ $subtitle ?? '' }}</div>
                 </div>
                 <div class="topbar-actions">
                     <x-notification-dropdown />
@@ -190,15 +192,30 @@
             </div>
         </div>
     </div>
+    <div class="global-modal-backdrop" id="save-confirmation-modal" aria-hidden="true">
+        <div class="global-modal-card" role="dialog" aria-modal="true" aria-labelledby="save-confirmation-title">
+            <h3 class="global-modal-title" id="save-confirmation-title">Save Changes</h3>
+            <p class="global-modal-text" id="save-confirmation-message">Save these changes?</p>
+            <div class="stack save-modal-actions">
+                <button class="btn" id="save-confirmation-submit" type="button">Save</button>
+                <button class="btn secondary" id="save-confirmation-cancel" type="button">Cancel</button>
+            </div>
+        </div>
+    </div>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const deleteModal = document.getElementById('delete-confirmation-modal');
             const deleteMessage = document.getElementById('delete-confirmation-message');
             const deleteSubmit = document.getElementById('delete-confirmation-submit');
             const deleteCancel = document.getElementById('delete-confirmation-cancel');
+            const saveModal = document.getElementById('save-confirmation-modal');
+            const saveMessage = document.getElementById('save-confirmation-message');
+            const saveSubmit = document.getElementById('save-confirmation-submit');
+            const saveCancel = document.getElementById('save-confirmation-cancel');
             let pendingDeleteForm = null;
+            let pendingSaveForm = null;
 
-            if (!deleteModal || !deleteMessage || !deleteSubmit || !deleteCancel) {
+            if (!deleteModal || !deleteMessage || !deleteSubmit || !deleteCancel || !saveModal || !saveMessage || !saveSubmit || !saveCancel) {
                 return;
             }
 
@@ -206,6 +223,12 @@
                 deleteModal.classList.remove('open');
                 deleteModal.setAttribute('aria-hidden', 'true');
                 pendingDeleteForm = null;
+            };
+
+            const closeSaveModal = () => {
+                saveModal.classList.remove('open');
+                saveModal.setAttribute('aria-hidden', 'true');
+                pendingSaveForm = null;
             };
 
             document.addEventListener('submit', function (event) {
@@ -222,6 +245,14 @@
                     deleteModal.classList.add('open');
                     deleteModal.setAttribute('aria-hidden', 'false');
                 }
+
+                if (form.hasAttribute('data-confirm-save') && form.dataset.saveConfirmed !== 'true') {
+                    event.preventDefault();
+                    pendingSaveForm = form;
+                    saveMessage.textContent = form.getAttribute('data-save-message') || 'Save these changes?';
+                    saveModal.classList.add('open');
+                    saveModal.setAttribute('aria-hidden', 'false');
+                }
             }, true);
 
             deleteSubmit.addEventListener('click', function () {
@@ -233,7 +264,17 @@
                 pendingDeleteForm.submit();
             });
 
+            saveSubmit.addEventListener('click', function () {
+                if (!pendingSaveForm) {
+                    return;
+                }
+
+                pendingSaveForm.dataset.saveConfirmed = 'true';
+                pendingSaveForm.submit();
+            });
+
             deleteCancel.addEventListener('click', closeDeleteModal);
+            saveCancel.addEventListener('click', closeSaveModal);
 
             deleteModal.addEventListener('click', function (event) {
                 if (event.target === deleteModal) {
@@ -241,9 +282,19 @@
                 }
             });
 
+            saveModal.addEventListener('click', function (event) {
+                if (event.target === saveModal) {
+                    closeSaveModal();
+                }
+            });
+
             document.addEventListener('keydown', function (event) {
                 if (event.key === 'Escape' && deleteModal.classList.contains('open')) {
                     closeDeleteModal();
+                }
+
+                if (event.key === 'Escape' && saveModal.classList.contains('open')) {
+                    closeSaveModal();
                 }
             });
         });
