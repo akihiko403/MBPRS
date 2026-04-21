@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BuildingCategory;
 use App\Models\BuildingPermit;
 use App\Models\BuildingType;
+use App\Models\SystemSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -24,15 +25,29 @@ class ReportController extends Controller
         return view('reports.index', [
             'title' => 'Reports',
             'subtitle' => 'Generate filtered permit reports and export records for monitoring and filing.',
-            'records' => $this->reportQuery($reportType, $filters)
-                ->with(['buildingType', 'buildingCategory', 'approver'])
-                ->latest()
-                ->get(),
+            'records' => $this->reportRecords($reportType, $filters),
             'reportType' => $reportType,
             'filters' => $filters,
             'buildingTypes' => BuildingType::query()->orderBy('name')->get(),
             'buildingCategories' => BuildingCategory::query()->orderBy('name')->get(),
             'reportTypes' => $this->reportTypes(),
+        ]);
+    }
+
+    public function print(Request $request): View|RedirectResponse
+    {
+        if ($redirect = $this->redirectIfCannotAccess('reports')) {
+            return $redirect;
+        }
+
+        $reportType = $request->input('report_type', 'approved');
+        $filters = $request->only(['search', 'month', 'year', 'barangay', 'city_municipality', 'province', 'status', 'date_from', 'date_to', 'building_type_id', 'building_category_id']);
+        $systemSettings = SystemSetting::current();
+
+        return view('reports.print', [
+            'records' => $this->reportRecords($reportType, $filters),
+            'reportHeading' => 'Municipal Building Permits',
+            'reportSubheading' => $systemSettings->system_subheader ?? 'Municipality of Lebak',
         ]);
     }
 
@@ -44,31 +59,26 @@ class ReportController extends Controller
 
         $reportType = $request->input('report_type', 'approved');
         $filters = $request->only(['search', 'month', 'year', 'barangay', 'city_municipality', 'province', 'status', 'date_from', 'date_to', 'building_type_id', 'building_category_id']);
-        $records = $this->reportQuery($reportType, $filters)
-            ->with(['buildingType', 'buildingCategory'])
+        $records = $this->reportRecords($reportType, $filters);
+        $systemSettings = SystemSetting::current();
+
+        return response()->streamDownload(function () use ($records, $systemSettings): void {
+            echo view('reports.export-excel', [
+                'records' => $records,
+                'reportHeading' => 'Municipal Building Permits',
+                'reportSubheading' => $systemSettings->system_subheader ?? 'Municipality of Lebak',
+            ])->render();
+        }, 'report-'.$reportType.'-'.now()->format('YmdHis').'.xls', [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+        ]);
+    }
+
+    private function reportRecords(string $reportType, array $filters)
+    {
+        return $this->reportQuery($reportType, $filters)
+            ->with(['buildingType', 'buildingCategory', 'approver'])
             ->latest()
             ->get();
-
-        return response()->streamDownload(function () use ($records) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Permit ID', 'Owner', 'Building Type', 'Building Category', 'Barangay', 'City/Municipality', 'Province', 'Status', 'Created At']);
-
-            foreach ($records as $record) {
-                fputcsv($handle, [
-                    $record->permit_id,
-                    $record->owner_full_name,
-                    $record->buildingType?->name,
-                    $record->buildingCategory?->name,
-                    $record->barangay,
-                    $record->city_municipality,
-                    $record->province,
-                    $record->status,
-                    $record->created_at?->format('M d, Y'),
-                ]);
-            }
-
-            fclose($handle);
-        }, 'report-'.$reportType.'-'.now()->format('YmdHis').'.csv', ['Content-Type' => 'text/csv']);
     }
 
     private function reportQuery(string $reportType, array $filters)

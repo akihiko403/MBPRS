@@ -25,7 +25,11 @@ class RecordUserActivity
 
     private function shouldRecord(Request $request): bool
     {
-        return ! $request->routeIs('login.attempt', 'logout', 'notifications.read');
+        if ($request->routeIs('login.attempt', 'logout', 'notifications.read')) {
+            return false;
+        }
+
+        return in_array($request->method(), ['POST', 'PATCH', 'PUT', 'DELETE'], true);
     }
 
     private function describe(Request $request): string
@@ -33,9 +37,10 @@ class RecordUserActivity
         $routeName = $request->route()?->getName();
 
         return match ($request->method()) {
-            'GET' => 'Viewed '.($routeName ?: $request->path()),
-            'POST' => 'Created or submitted '.($routeName ?: $request->path()),
-            'PATCH', 'PUT' => 'Updated '.($routeName ?: $request->path()),
+            'POST' => 'Added '.($routeName ?: $request->path()),
+            'PATCH', 'PUT' => $request->is('*restore*') || str_contains((string) $routeName, 'restore')
+                ? 'Restored '.($routeName ?: $request->path())
+                : 'Updated '.($routeName ?: $request->path()),
             'DELETE' => 'Deleted '.($routeName ?: $request->path()),
             default => $request->method().' '.($routeName ?: $request->path()),
         };

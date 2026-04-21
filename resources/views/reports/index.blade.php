@@ -61,7 +61,7 @@
         <div class="stack">
             <button class="btn report-action" type="button" data-open-modal="report-filter-modal">Filters</button>
             <a class="btn secondary report-action" href="{{ route('reports.export', request()->query()) }}">Export Excel/CSV</a>
-            <button class="btn secondary report-action" onclick="window.print()" type="button">Print Report</button>
+            <a class="btn secondary report-action" href="{{ route('reports.print', request()->query()) }}" target="_blank" rel="noopener">Print Report</a>
         </div>
         <form class="card-search" method="GET" action="{{ route('reports.index') }}">
             @foreach(request()->except(['search']) as $key => $value)

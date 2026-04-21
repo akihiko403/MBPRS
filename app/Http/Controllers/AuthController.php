@@ -49,9 +49,7 @@ class AuthController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
-        $user = $request->user();
-
-        AuditLog::record('logout', 'User logged out.', $user, $request);
+        AuditLog::record('logout', 'User logged out.', $request->user(), $request);
 
         Auth::logout();
         $request->session()->invalidate();

@@ -13,8 +13,10 @@
         body { margin:0; font-family:'Poppins', sans-serif; background:linear-gradient(180deg,#f8fbf9,#eef3f0); color:var(--ink); }
         a { color:inherit; text-decoration:none; }
         .shell { display:grid; grid-template-columns:280px 1fr; min-height:100vh; }
-        .sidebar { background:#163932; color:#eef7f4; padding:28px 22px; }
+        .sidebar { position:sticky; top:0; height:100vh; overflow-y:auto; background:#163932; color:#eef7f4; padding:28px 22px; display:flex; flex-direction:column; }
         .brand { display:flex; flex-direction:column; align-items:flex-start; gap:12px; font-size:1.3rem; font-weight:700; line-height:1.3; margin-bottom:18px; }
+        .brand-title { display:block; }
+        .brand-subtitle { display:block; margin-top:8px; font-size:.76rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:rgba(238,247,244,.78); }
         .brand-logo { width:58px; height:58px; object-fit:cover; border-radius:12px; }
         .brand-logo.centered { align-self:center; }
         .sidebar-divider { display:block; width:100%; height:1px; background:rgba(255,255,255,.72); margin:0 0 24px; }
@@ -111,6 +113,17 @@
         .badge.Rejected { background:#fee2e2; color:#991b1b; }
         .badge.Returned { background:#ffedd5; color:#9a3412; }
         .badge.Expired { background:#dbeafe; color:#1d4ed8; }
+        nav[role="navigation"][aria-label*="Pagination"] { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:16px; color:var(--muted); font-size:.88rem; }
+        nav[role="navigation"][aria-label*="Pagination"] > div:first-child { display:none; }
+        nav[role="navigation"][aria-label*="Pagination"] > div:last-child { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; }
+        nav[role="navigation"][aria-label*="Pagination"] p { margin:0; }
+        nav[role="navigation"][aria-label*="Pagination"] span[aria-current="page"] span,
+        nav[role="navigation"][aria-label*="Pagination"] a,
+        nav[role="navigation"][aria-label*="Pagination"] span[aria-disabled="true"] span { display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; padding:0 10px; border:1px solid var(--line); background:#fff; color:var(--ink); font-size:.86rem; line-height:1; }
+        nav[role="navigation"][aria-label*="Pagination"] a:hover { background:#eef6f3; color:var(--brand); }
+        nav[role="navigation"][aria-label*="Pagination"] span[aria-current="page"] span { background:var(--brand); color:#fff; border-color:var(--brand); }
+        nav[role="navigation"][aria-label*="Pagination"] span[aria-disabled="true"] span { color:#9aa8a3; background:#f8fbf9; }
+        nav[role="navigation"][aria-label*="Pagination"] svg { width:16px !important; height:16px !important; max-width:16px; max-height:16px; display:block; flex:0 0 16px; }
         .alert { padding:14px 16px; border-radius:14px; margin-bottom:18px; }
         .alert.success { background:#ecfdf5; color:#166534; border:1px solid #86efac; }
         .alert.error { background:#fef2f2; color:#991b1b; border:1px solid #fca5a5; }
@@ -125,8 +138,11 @@
         .global-modal-text { margin:0 0 18px; color:var(--muted); line-height:1.5; }
         .delete-modal-actions, .save-modal-actions { justify-content:flex-end; }
         .delete-modal-actions .btn, .save-modal-actions .btn { width:auto; }
-        @media (max-width:920px){ .shell,.login-card,.grid.cols-2,.grid.cols-3,.grid.cols-4,.form-grid{ grid-template-columns:1fr; } .main{ padding:18px; } .topbar{ align-items:start; } }
-        @media (max-width:640px){ .card-search { grid-template-columns:1fr; } .card-search-actions { width:100%; } .card-search .btn, .card-search a { width:100%; } }
+        .app-footer { margin-top:auto; border-top:1px solid rgba(255,255,255,.2); color:#d6e6e1; padding:18px 0 0; }
+        .app-footer-inner { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; margin:0 auto; text-align:center; font-size:.78rem; line-height:1.5; }
+        .app-footer p { margin:0; font-weight:500; }
+        @media (max-width:920px){ .shell,.login-card,.grid.cols-2,.grid.cols-3,.grid.cols-4,.form-grid{ grid-template-columns:1fr; } .sidebar{ position:relative; height:auto; min-height:0; overflow:visible; } .main{ padding:18px; } .topbar{ align-items:start; } }
+        @media (max-width:640px){ .card-search { grid-template-columns:1fr; } .card-search-actions { width:100%; } .card-search .btn, .card-search a { width:100%; } nav[role="navigation"][aria-label*="Pagination"] > div:last-child { justify-content:center; } nav[role="navigation"][aria-label*="Pagination"] p { display:none; } }
     </style>
 </head>
 <body>
@@ -145,7 +161,10 @@
                 @if($systemLogoUrl)
                     <img class="brand-logo centered" src="{{ $systemLogoUrl }}" alt="">
                 @endif
-                <span>{{ $systemSettings->system_name }}</span>
+                <span class="brand-title">
+                    {{ $systemSettings->system_name }}
+                    <span class="brand-subtitle">Municipality of Lebak</span>
+                </span>
             </div>
             <div class="sidebar-divider" aria-hidden="true"></div>
             @php($links = [
@@ -163,6 +182,7 @@
                     <a class="nav-link {{ request()->routeIs($link['route']) ? 'active' : '' }}" href="{{ route($link['route']) }}">{{ $link['label'] }}</a>
                 @endif
             @endforeach
+            <x-app-footer />
         </aside>
         <main class="main">
             <div class="topbar">

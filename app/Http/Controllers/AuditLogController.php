@@ -19,9 +19,18 @@ class AuditLogController extends Controller
 
         return view('audit-logs.index', [
             'title' => 'Audit Log',
-            'subtitle' => 'Track user login time, logout time, and system activity.',
+            'subtitle' => 'Track user login sessions and record changes.',
             'logs' => AuditLog::query()
                 ->with('user')
+                ->where(function ($query): void {
+                    $query
+                        ->whereIn('action', ['login', 'logout'])
+                        ->orWhere(function ($query): void {
+                            $query
+                                ->whereIn('method', ['POST', 'PATCH', 'PUT', 'DELETE'])
+                                ->where('description', 'not like', 'Viewed %');
+                        });
+                })
                 ->filter($filters)
                 ->latest()
                 ->paginate(15)

@@ -6,6 +6,7 @@
     $changeMethods = ['POST', 'PATCH', 'PUT', 'DELETE'];
     $changesQuery = fn () => \App\Models\AuditLog::query()
         ->whereIn('method', $changeMethods)
+        ->whereNotIn('action', ['login', 'logout'])
         ->where('description', 'not like', 'Viewed %');
 
     $notifications = $changesQuery()

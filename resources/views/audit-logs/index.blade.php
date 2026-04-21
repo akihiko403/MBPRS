@@ -12,10 +12,10 @@
     <div class="page-actions">
         <div>
             <h3 style="margin:0;">Audit Log</h3>
-            <div class="meta">{{ $logs->total() }} recorded events.</div>
+            <div class="meta">{{ $logs->total() }} login and record change events.</div>
         </div>
         <form class="card-search" method="GET" action="{{ route('audit-logs.index') }}">
-            <input name="search" value="{{ request('search') }}" placeholder="Search user, action, activity, IP">
+            <input name="search" value="{{ request('search') }}" placeholder="Search user, login, add, update, delete, restore, IP">
             <div class="card-search-actions"><button class="btn" type="submit">Search</button>
                 @if(request('search'))<a class="btn secondary" href="{{ route('audit-logs.index') }}">Reset</a>@endif
             </div>

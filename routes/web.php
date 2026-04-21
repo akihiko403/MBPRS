@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/permit-approvals/{buildingPermit}/status', [PermitApprovalController::class, 'updateStatus'])->name('permit-approvals.update-status');
 
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/print', [ReportController::class, 'print'])->name('reports.print');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
 
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
