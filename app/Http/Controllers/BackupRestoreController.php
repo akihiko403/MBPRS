@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
@@ -40,9 +41,11 @@ class BackupRestoreController extends Controller
             try {
                 $output = $this->runPostgresDump();
             } catch (Throwable $exception) {
-                report($exception);
+                Log::error('PostgreSQL backup failed.', [
+                    'message' => $exception->getMessage(),
+                ]);
 
-                return back()->with('error', 'Database backup failed. Please make sure PostgreSQL client tools are available and try again.');
+                return back()->with('error', 'Database backup failed: '.$exception->getMessage());
             }
 
             return response(
@@ -114,9 +117,11 @@ class BackupRestoreController extends Controller
             try {
                 $this->runPostgresRestore($validated['backup_file']->getRealPath());
             } catch (Throwable $exception) {
-                report($exception);
+                Log::error('PostgreSQL restore failed.', [
+                    'message' => $exception->getMessage(),
+                ]);
 
-                return back()->with('error', 'Database restore failed. Please make sure the backup file is valid and try again.');
+                return back()->with('error', 'Database restore failed: '.$exception->getMessage());
             }
 
             return redirect()->route('backup-restore.index')->with('success', 'Database restored successfully.');
@@ -150,9 +155,11 @@ class BackupRestoreController extends Controller
     private function runPostgresDump(): string
     {
         $config = $this->postgresConnectionConfig();
+        $binary = $this->findBinary('pg_dump');
 
         $command = sprintf(
-            'pg_dump --clean --if-exists --no-owner --no-privileges --encoding=UTF8 --host=%s --port=%s --username=%s --dbname=%s',
+            '%s --clean --if-exists --no-owner --no-privileges --encoding=UTF8 --host=%s --port=%s --username=%s --dbname=%s',
+            escapeshellarg($binary),
             escapeshellarg((string) ($config['host'] ?? '127.0.0.1')),
             escapeshellarg((string) ($config['port'] ?? '5432')),
             escapeshellarg((string) ($config['username'] ?? '')),
@@ -165,9 +172,11 @@ class BackupRestoreController extends Controller
     private function runPostgresRestore(string $filePath): void
     {
         $config = $this->postgresConnectionConfig();
+        $binary = $this->findBinary('psql');
 
         $command = sprintf(
-            'psql --set ON_ERROR_STOP=on --host=%s --port=%s --username=%s --dbname=%s --file=%s',
+            '%s --set ON_ERROR_STOP=on --host=%s --port=%s --username=%s --dbname=%s --file=%s',
+            escapeshellarg($binary),
             escapeshellarg((string) ($config['host'] ?? '127.0.0.1')),
             escapeshellarg((string) ($config['port'] ?? '5432')),
             escapeshellarg((string) ($config['username'] ?? '')),
@@ -185,6 +194,27 @@ class BackupRestoreController extends Controller
             'PGSSLMODE' => (string) ($config['sslmode'] ?? env('DB_SSLMODE', 'prefer')),
             'PGCONNECT_TIMEOUT' => '15',
         ], static fn ($value) => $value !== '');
+    }
+
+    private function findBinary(string $binary): string
+    {
+        $candidates = [
+            '/usr/bin/'.$binary,
+            '/usr/local/bin/'.$binary,
+            $binary,
+        ];
+
+        foreach ($candidates as $candidate) {
+            if ($candidate === $binary) {
+                return $candidate;
+            }
+
+            if (is_file($candidate) && is_executable($candidate)) {
+                return $candidate;
+            }
+        }
+
+        throw new RuntimeException("{$binary} binary not found. Rebuild the Render image with postgresql-client installed.");
     }
 
     private function runShellCommand(string $command, array $environment = []): string
