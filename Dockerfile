@@ -67,8 +67,9 @@ COPY --from=frontend /app/public/build ./public/build
 
 RUN rm -f bootstrap/cache/*.php \
     && php artisan package:discover --ansi \
+    && php artisan storage:link \
     && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/testing storage/framework/views storage/logs bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+    && chown -R www-data:www-data storage bootstrap/cache public/storage
 
 EXPOSE 80
 
