@@ -48,17 +48,14 @@ class BackupRestoreController extends Controller
                 return back()->with('error', 'Database backup failed: '.$exception->getMessage());
             }
 
-            return response(
-                "-- MBPRS database backup\n"
-                ."-- Database: {$databaseName}\n"
-                ."-- Generated: ".now()->toDateTimeString()."\n\n"
-                .$output,
-                200,
-                [
-                    'Content-Type' => 'application/sql',
-                    'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
-                ],
-            );
+            return response()->streamDownload(function () use ($databaseName, $output): void {
+                echo "-- MBPRS database backup\n";
+                echo "-- Database: {$databaseName}\n";
+                echo "-- Generated: ".now()->toDateTimeString()."\n\n";
+                echo $output;
+            }, $fileName, [
+                'Content-Type' => 'application/sql',
+            ]);
         }
 
         return response()->streamDownload(function () use ($databaseName): void {
