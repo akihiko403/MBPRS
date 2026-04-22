@@ -20,7 +20,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if ($this->app->environment('production')) {
+        if (strtolower((string) config('app.env')) === 'production') {
             URL::forceHttps();
         }
     }
