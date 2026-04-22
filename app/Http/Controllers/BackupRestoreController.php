@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Role;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
@@ -15,7 +15,7 @@ class BackupRestoreController extends Controller
 {
     public function index(): View|RedirectResponse
     {
-        if ($redirect = $this->redirectIfMissingRole(Role::ADMINISTRATOR)) {
+        if ($redirect = $this->redirectIfCannotAccess('backup-restore')) {
             return $redirect;
         }
 
@@ -29,12 +29,34 @@ class BackupRestoreController extends Controller
 
     public function backup(): StreamedResponse|RedirectResponse
     {
-        if ($redirect = $this->redirectIfMissingRole(Role::ADMINISTRATOR)) {
+        if ($redirect = $this->redirectIfCannotAccess('backup-restore')) {
             return $redirect;
         }
 
         $databaseName = config('database.connections.'.config('database.default').'.database');
         $fileName = 'mbprs-backup-'.now()->format('Y-m-d-His').'.sql';
+
+        if ($this->defaultDriver() === 'pgsql') {
+            try {
+                $output = $this->runPostgresDump();
+            } catch (Throwable $exception) {
+                report($exception);
+
+                return back()->with('error', 'Database backup failed. Please make sure PostgreSQL client tools are available and try again.');
+            }
+
+            return response(
+                "-- MBPRS database backup\n"
+                ."-- Database: {$databaseName}\n"
+                ."-- Generated: ".now()->toDateTimeString()."\n\n"
+                .$output,
+                200,
+                [
+                    'Content-Type' => 'application/sql',
+                    'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+                ],
+            );
+        }
 
         return response()->streamDownload(function () use ($databaseName): void {
             echo "-- MBPRS database backup\n";
@@ -70,18 +92,34 @@ class BackupRestoreController extends Controller
 
     public function restore(Request $request): RedirectResponse
     {
-        if ($redirect = $this->redirectIfMissingRole(Role::ADMINISTRATOR)) {
+        if ($redirect = $this->redirectIfCannotAccess('backup-restore')) {
             return $redirect;
         }
 
         $validated = $request->validate([
-            'backup_file' => ['required', 'file', 'mimes:sql,txt', 'max:51200'],
+            'backup_file' => ['required', 'file', 'extensions:sql,txt', 'max:51200'],
         ]);
 
         $sql = file_get_contents($validated['backup_file']->getRealPath());
 
-        if (! str_contains($sql, 'MBPRS database backup')) {
+        if (
+            ! str_contains($sql, 'MBPRS database backup')
+            && ! str_contains($sql, 'PostgreSQL database dump')
+            && ! str_contains($sql, 'pg_dump')
+        ) {
             return back()->with('error', 'Only MBPRS backup files can be restored.');
+        }
+
+        if ($this->defaultDriver() === 'pgsql') {
+            try {
+                $this->runPostgresRestore($validated['backup_file']->getRealPath());
+            } catch (Throwable $exception) {
+                report($exception);
+
+                return back()->with('error', 'Database restore failed. Please make sure the backup file is valid and try again.');
+            }
+
+            return redirect()->route('backup-restore.index')->with('success', 'Database restored successfully.');
         }
 
         $sql = preg_replace('/^\s*--.*$/m', '', $sql);
@@ -97,6 +135,82 @@ class BackupRestoreController extends Controller
         }
 
         return redirect()->route('backup-restore.index')->with('success', 'Database restored successfully.');
+    }
+
+    private function defaultDriver(): string
+    {
+        return (string) config('database.default');
+    }
+
+    private function postgresConnectionConfig(): array
+    {
+        return config('database.connections.'.$this->defaultDriver(), []);
+    }
+
+    private function runPostgresDump(): string
+    {
+        $config = $this->postgresConnectionConfig();
+
+        $command = sprintf(
+            'pg_dump --clean --if-exists --no-owner --no-privileges --encoding=UTF8 --host=%s --port=%s --username=%s --dbname=%s',
+            escapeshellarg((string) ($config['host'] ?? '127.0.0.1')),
+            escapeshellarg((string) ($config['port'] ?? '5432')),
+            escapeshellarg((string) ($config['username'] ?? '')),
+            escapeshellarg((string) ($config['database'] ?? ''))
+        );
+
+        return $this->runShellCommand($command, [
+            'PGPASSWORD' => (string) ($config['password'] ?? ''),
+        ]);
+    }
+
+    private function runPostgresRestore(string $filePath): void
+    {
+        $config = $this->postgresConnectionConfig();
+
+        $command = sprintf(
+            'psql --set ON_ERROR_STOP=on --host=%s --port=%s --username=%s --dbname=%s --file=%s',
+            escapeshellarg((string) ($config['host'] ?? '127.0.0.1')),
+            escapeshellarg((string) ($config['port'] ?? '5432')),
+            escapeshellarg((string) ($config['username'] ?? '')),
+            escapeshellarg((string) ($config['database'] ?? '')),
+            escapeshellarg($filePath)
+        );
+
+        $this->runShellCommand($command, [
+            'PGPASSWORD' => (string) ($config['password'] ?? ''),
+        ]);
+    }
+
+    private function runShellCommand(string $command, array $environment = []): string
+    {
+        $descriptorSpec = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+
+        $process = proc_open($command, $descriptorSpec, $pipes, base_path(), array_merge($_ENV, $_SERVER, $environment));
+
+        if (! is_resource($process)) {
+            throw new RuntimeException('Unable to start database process.');
+        }
+
+        fclose($pipes[0]);
+
+        $output = stream_get_contents($pipes[1]);
+        $errorOutput = stream_get_contents($pipes[2]);
+
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+
+        $exitCode = proc_close($process);
+
+        if ($exitCode !== 0) {
+            throw new RuntimeException(trim($errorOutput) !== '' ? trim($errorOutput) : 'Database process failed.');
+        }
+
+        return $output;
     }
 
     private function tables(): array

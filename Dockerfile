@@ -37,6 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpng-dev \
     libpq-dev \
     libzip-dev \
+    postgresql-client \
     unzip \
     zip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
