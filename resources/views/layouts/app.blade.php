@@ -20,8 +20,11 @@
         .brand-logo { width:58px; height:58px; object-fit:cover; border-radius:12px; }
         .brand-logo.centered { align-self:center; }
         .sidebar-divider { display:block; width:100%; height:1px; background:rgba(255,255,255,.72); margin:0 0 24px; }
-        .nav-link { display:block; padding:12px 14px; border-radius:12px; margin-bottom:8px; color:#d6e6e1; }
+        .nav-link { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px; margin-bottom:8px; color:#d6e6e1; transition:background-color .16s ease,color .16s ease,transform .16s ease; }
         .nav-link:hover,.nav-link.active { background:rgba(255,255,255,.1); color:#fff; }
+        .nav-link:hover { transform:translateX(2px); }
+        .nav-icon { width:18px; height:18px; flex:0 0 18px; color:currentColor; opacity:.92; }
+        .nav-label { line-height:1.2; }
         .main { padding:28px; }
         .topbar { display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:16px; align-items:center; min-height:58px; margin-bottom:24px; }
         .topbar-heading { min-width:0; display:grid; gap:4px; align-content:center; }
@@ -168,18 +171,46 @@
             </div>
             <div class="sidebar-divider" aria-hidden="true"></div>
             @php($links = [
-                ['label' => 'Dashboard', 'route' => 'dashboard', 'module' => 'dashboard'],
-                ['label' => 'Building Permit', 'route' => 'building-permits.index', 'module' => 'building-permits'],
-                ['label' => 'Building Type', 'route' => 'building-types.index', 'module' => 'building-types'],
-                ['label' => 'Building Category', 'route' => 'building-categories.index', 'module' => 'building-categories'],
-                ['label' => 'Permit Approval', 'route' => 'permit-approvals.index', 'module' => 'permit-approvals'],
-                ['label' => 'Reports', 'route' => 'reports.index', 'module' => 'reports'],
-                ['label' => 'Audit Log', 'route' => 'audit-logs.index', 'module' => 'audit-logs'],
-                ['label' => 'User Management', 'route' => 'users.index', 'module' => 'users'],
+                ['label' => 'Dashboard', 'route' => 'dashboard', 'module' => 'dashboard', 'icon' => 'dashboard'],
+                ['label' => 'Building Permit', 'route' => 'building-permits.index', 'module' => 'building-permits', 'icon' => 'permit'],
+                ['label' => 'Building Type', 'route' => 'building-types.index', 'module' => 'building-types', 'icon' => 'type'],
+                ['label' => 'Building Category', 'route' => 'building-categories.index', 'module' => 'building-categories', 'icon' => 'category'],
+                ['label' => 'Permit Approval', 'route' => 'permit-approvals.index', 'module' => 'permit-approvals', 'icon' => 'approval'],
+                ['label' => 'Reports', 'route' => 'reports.index', 'module' => 'reports', 'icon' => 'reports'],
+                ['label' => 'Audit Log', 'route' => 'audit-logs.index', 'module' => 'audit-logs', 'icon' => 'audit'],
+                ['label' => 'User Management', 'route' => 'users.index', 'module' => 'users', 'icon' => 'users'],
             ])
             @foreach ($links as $link)
                 @if (auth()->user()->canAccess($link['module']))
-                    <a class="nav-link {{ request()->routeIs($link['route']) ? 'active' : '' }}" href="{{ route($link['route']) }}">{{ $link['label'] }}</a>
+                    <a class="nav-link {{ request()->routeIs($link['route']) ? 'active' : '' }}" href="{{ route($link['route']) }}">
+                        @switch($link['icon'])
+                            @case('dashboard')
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="10" width="8" height="11" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/></svg>
+                                @break
+                            @case('permit')
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h6"/><path d="M9 9h1"/></svg>
+                                @break
+                            @case('type')
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M7 7V5.5A1.5 1.5 0 0 1 8.5 4h7A1.5 1.5 0 0 1 17 5.5V7"/><path d="M6 7v10a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V7"/><path d="M10 11h4"/><path d="M10 15h4"/></svg>
+                                @break
+                            @case('category')
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5 12 21l9-4.5"/></svg>
+                                @break
+                            @case('approval')
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                                @break
+                            @case('reports')
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19h16"/><path d="M7 16V9"/><path d="M12 16V5"/><path d="M17 16v-4"/></svg>
+                                @break
+                            @case('audit')
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/><path d="M11 8v3l2 2"/></svg>
+                                @break
+                            @case('users')
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M17 11h6"/></svg>
+                                @break
+                        @endswitch
+                        <span class="nav-label">{{ $link['label'] }}</span>
+                    </a>
                 @endif
             @endforeach
             <x-app-footer />
