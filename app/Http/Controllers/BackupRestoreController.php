@@ -114,6 +114,14 @@ class BackupRestoreController extends Controller
         }
 
         if ($this->defaultDriver() === 'pgsql') {
+            if (
+                str_contains($sql, 'SET FOREIGN_KEY_CHECKS')
+                || str_contains($sql, 'SHOW CREATE TABLE')
+                || str_contains($sql, 'ENGINE=')
+            ) {
+                return back()->with('error', 'This backup file was generated for MySQL/MariaDB and cannot be restored to the PostgreSQL database on Render. Use a PostgreSQL backup generated from this deployed app.');
+            }
+
             try {
                 $this->runPostgresRestore($validated['backup_file']->getRealPath());
             } catch (Throwable $exception) {
