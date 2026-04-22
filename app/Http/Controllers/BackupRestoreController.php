@@ -207,6 +207,7 @@ class BackupRestoreController extends Controller
     private function findBinary(string $binary): string
     {
         $candidates = [
+            '/usr/lib/postgresql/18/bin/'.$binary,
             '/usr/bin/'.$binary,
             '/usr/local/bin/'.$binary,
             $binary,

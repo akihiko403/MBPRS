@@ -25,14 +25,15 @@ COPY vite.config.js ./
 RUN npm run build
 
 
+FROM postgres:18-bookworm AS pgtools
+
+
 FROM php:8.3-apache
 
 # Runtime dependencies for Laravel + PostgreSQL.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
     curl \
     git \
-    gnupg \
     libfreetype6-dev \
     libjpeg62-turbo-dev \
     libonig-dev \
@@ -41,11 +42,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libzip-dev \
     unzip \
     zip \
-    && install -d /etc/apt/keyrings \
-    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
-    && apt-get update && apt-get install -y --no-install-recommends \
-    postgresql-client-18 \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" \
         bcmath \
@@ -71,6 +67,8 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
 COPY . .
 COPY --from=vendor /app/vendor ./vendor
 COPY --from=frontend /app/public/build ./public/build
+COPY --from=pgtools /usr/lib/postgresql /usr/lib/postgresql
+COPY --from=pgtools /usr/share/postgresql /usr/share/postgresql
 
 RUN rm -f bootstrap/cache/*.php \
     && php artisan package:discover --ansi \
