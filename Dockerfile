@@ -64,7 +64,8 @@ COPY . .
 COPY --from=vendor /app/vendor ./vendor
 COPY --from=frontend /app/public/build ./public/build
 
-RUN php artisan package:discover --ansi \
+RUN rm -f bootstrap/cache/*.php \
+    && php artisan package:discover --ansi \
     && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/testing storage/framework/views storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
