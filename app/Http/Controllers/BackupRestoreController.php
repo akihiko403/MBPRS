@@ -159,9 +159,7 @@ class BackupRestoreController extends Controller
             escapeshellarg((string) ($config['database'] ?? ''))
         );
 
-        return $this->runShellCommand($command, [
-            'PGPASSWORD' => (string) ($config['password'] ?? ''),
-        ]);
+        return $this->runShellCommand($command, $this->postgresEnvironment($config));
     }
 
     private function runPostgresRestore(string $filePath): void
@@ -177,9 +175,16 @@ class BackupRestoreController extends Controller
             escapeshellarg($filePath)
         );
 
-        $this->runShellCommand($command, [
+        $this->runShellCommand($command, $this->postgresEnvironment($config));
+    }
+
+    private function postgresEnvironment(array $config): array
+    {
+        return array_filter([
             'PGPASSWORD' => (string) ($config['password'] ?? ''),
-        ]);
+            'PGSSLMODE' => (string) ($config['sslmode'] ?? env('DB_SSLMODE', 'prefer')),
+            'PGCONNECT_TIMEOUT' => '15',
+        ], static fn ($value) => $value !== '');
     }
 
     private function runShellCommand(string $command, array $environment = []): string
