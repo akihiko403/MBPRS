@@ -33,6 +33,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     libfreetype6-dev \
     libjpeg62-turbo-dev \
+    libonig-dev \
     libpng-dev \
     libpq-dev \
     libzip-dev \
@@ -46,6 +47,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         mbstring \
         opcache \
         pcntl \
+        pdo \
         pdo_pgsql \
         zip \
     && a2enmod rewrite \
