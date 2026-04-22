@@ -39,8 +39,8 @@ class Role extends Model
     public static function permissions(): array
     {
         return [
-            self::ADMIN => ['dashboard', 'building-permits', 'building-types', 'building-categories', 'permit-approvals', 'reports', 'users', 'audit-logs'],
-            self::ADMINISTRATOR => ['dashboard', 'building-permits', 'building-types', 'building-categories', 'permit-approvals', 'reports', 'users', 'audit-logs'],
+            self::ADMIN => ['dashboard', 'building-permits', 'building-types', 'building-categories', 'permit-approvals', 'reports', 'users', 'audit-logs', 'settings'],
+            self::ADMINISTRATOR => ['dashboard', 'building-permits', 'building-types', 'building-categories', 'permit-approvals', 'reports', 'users', 'audit-logs', 'settings', 'backup-restore'],
             self::PERMIT_STAFF => ['dashboard', 'building-permits'],
         ];
     }
