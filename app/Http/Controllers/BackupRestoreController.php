@@ -225,7 +225,21 @@ class BackupRestoreController extends Controller
             2 => ['pipe', 'w'],
         ];
 
-        $process = proc_open($command, $descriptorSpec, $pipes, base_path(), array_merge($_ENV, $_SERVER, $environment));
+        $processEnvironment = [];
+
+        foreach (array_merge($_ENV, $_SERVER, $environment) as $key => $value) {
+            if (! is_string($key) || $key === '') {
+                continue;
+            }
+
+            if (is_array($value) || is_object($value)) {
+                continue;
+            }
+
+            $processEnvironment[$key] = $value === null ? '' : (string) $value;
+        }
+
+        $process = proc_open($command, $descriptorSpec, $pipes, base_path(), $processEnvironment);
 
         if (! is_resource($process)) {
             throw new RuntimeException('Unable to start database process.');
