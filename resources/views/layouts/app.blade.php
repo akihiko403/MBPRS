@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'Municipal Building Permit Repository System' }}</title>
-    <link rel="icon" type="image/png" href="{{ asset('icons/site-icon.png') }}">
+    @php($siteIconVersion = file_exists(public_path('icons/site-icon.png')) ? filemtime(public_path('icons/site-icon.png')) : time())
+    <link rel="icon" href="{{ asset('favicon.ico') }}?v={{ $siteIconVersion }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon.png') }}?v={{ $siteIconVersion }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}?v={{ $siteIconVersion }}">
+    <link rel="apple-touch-icon" href="{{ asset('favicon.png') }}?v={{ $siteIconVersion }}">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
