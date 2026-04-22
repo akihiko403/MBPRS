@@ -70,7 +70,7 @@ class DashboardController extends Controller
         $typeMax = max($typeBreakdown->max('count') ?: 0, 1);
 
         return view('dashboard.index', [
-            'title' => 'Dashboard',
+            'title' => 'MBPRS DASHBOARD',
             'subtitle' => 'Permit overview, recent activity, and quick access to core modules.',
             'stats' => [
                 'total' => $permits->count(),
