@@ -17,6 +17,10 @@
     .action-icon.warn { background:#fff7ed; color:#b45309; }
     .action-icon.secondary { background:#eef6f3; color:#1f6f5f; }
     .action-icon.delete { background:#fef2f2; color:#991b1b; }
+    .credentials-list { display:grid; gap:12px; margin:0 0 18px; }
+    .credentials-item { padding:12px 14px; border:1px solid var(--line); border-radius:14px; background:#f8fbf9; }
+    .credentials-item label { display:block; margin-bottom:4px; font-size:.8rem; text-transform:uppercase; letter-spacing:.06em; }
+    .credentials-item strong { display:block; font-size:1rem; color:var(--ink); word-break:break-word; }
 </style>
 
 <div class="card">
@@ -51,7 +55,7 @@
                                 @method('PATCH')
                                 <button class="action-icon warn" type="submit" title="{{ $user->is_active ? 'Deactivate' : 'Activate' }} User" aria-label="{{ $user->is_active ? 'Deactivate' : 'Activate' }} User"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5"/><path d="M12 16h.01"/></svg></button>
                             </form>
-                            <form method="POST" action="{{ route('users.reset-password', $user) }}" onsubmit="return confirm('Reset this user password to password123?');" style="display:inline-flex; margin:0;">
+                            <form method="POST" action="{{ route('users.reset-password', $user) }}" data-reset-password data-username="{{ $user->username }}" style="display:inline-flex; margin:0;">
                                 @csrf
                                 @method('PATCH')
                                 <button class="action-icon secondary" type="submit" title="Reset Password" aria-label="Reset Password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg></button>
@@ -119,25 +123,163 @@
     </div>
 </div>
 
+<div class="modal-backdrop" id="reset-password-confirmation-modal" aria-hidden="true">
+    <div class="modal-card" style="width:min(430px, 100%);">
+        <div class="modal-head">
+            <div>
+                <h3 style="margin:0;">Reset Password</h3>
+                <div class="muted">Confirm password reset for this user account.</div>
+            </div>
+            <button class="icon-btn" type="button" data-close-modal="reset-password-confirmation-modal">Close</button>
+        </div>
+        <div class="modal-body">
+            <p class="muted" id="reset-password-confirmation-message" style="margin-top:0;">Reset this user password to the default password?</p>
+            <div class="stack" style="justify-content:flex-end;">
+                <button class="btn secondary" type="button" data-close-modal="reset-password-confirmation-modal">Cancel</button>
+                <button class="btn" id="reset-password-confirmation-submit" type="button">Confirm Reset</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-backdrop" id="reset-password-result-modal" aria-hidden="true">
+    <div class="modal-card" style="width:min(460px, 100%);">
+        <div class="modal-head">
+            <div>
+                <h3 style="margin:0;">Reset Complete</h3>
+                <div class="muted">Share these login details with the user.</div>
+            </div>
+            <button class="icon-btn" type="button" data-close-modal="reset-password-result-modal">Close</button>
+        </div>
+        <div class="modal-body">
+            <div class="credentials-list">
+                <div class="credentials-item">
+                    <label>Username</label>
+                    <strong>{{ session('reset_password_credentials.username') }}</strong>
+                </div>
+                <div class="credentials-item">
+                    <label>Password</label>
+                    <strong>{{ session('reset_password_credentials.password', 'password123') }}</strong>
+                </div>
+            </div>
+            <div class="stack" style="justify-content:flex-end;">
+                <button class="btn" type="button" data-close-modal="reset-password-result-modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-    document.addEventListener('click', function (event) {
-        const openTrigger = event.target.closest('[data-open-modal]');
-        const closeTrigger = event.target.closest('[data-close-modal]');
-        if (openTrigger) {
-            const modal = document.getElementById(openTrigger.dataset.openModal);
-            if (modal) modal.classList.add('open');
-        }
-        if (closeTrigger) {
-            const modal = document.getElementById(closeTrigger.dataset.closeModal);
-            if (modal) {
-                modal.classList.remove('open');
-                if (window.location.search.includes('edit=')) window.location = '{{ route('users.index') }}';
+    document.addEventListener('DOMContentLoaded', function () {
+        const confirmationModal = document.getElementById('reset-password-confirmation-modal');
+        const confirmationMessage = document.getElementById('reset-password-confirmation-message');
+        const confirmationSubmit = document.getElementById('reset-password-confirmation-submit');
+        const resultModal = document.getElementById('reset-password-result-modal');
+        let pendingResetForm = null;
+
+        const closeModal = function (modalId) {
+            const modal = document.getElementById(modalId);
+
+            if (!modal) {
+                return;
             }
+
+            modal.classList.remove('open');
+            modal.setAttribute('aria-hidden', 'true');
+        };
+
+        document.addEventListener('submit', function (event) {
+            const form = event.target;
+
+            if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-reset-password')) {
+                return;
+            }
+
+            if (form.dataset.resetConfirmed === 'true') {
+                return;
+            }
+
+            event.preventDefault();
+            pendingResetForm = form;
+
+            if (confirmationMessage) {
+                const username = form.dataset.username || 'this user';
+                confirmationMessage.textContent = 'Reset the password for ' + username + ' to password123?';
+            }
+
+            if (confirmationModal) {
+                confirmationModal.classList.add('open');
+                confirmationModal.setAttribute('aria-hidden', 'false');
+            }
+        }, true);
+
+        if (confirmationSubmit) {
+            confirmationSubmit.addEventListener('click', function () {
+                if (!pendingResetForm) {
+                    return;
+                }
+
+                pendingResetForm.dataset.resetConfirmed = 'true';
+                pendingResetForm.submit();
+            });
         }
-        if (event.target.classList.contains('modal-backdrop')) {
-            event.target.classList.remove('open');
-            if (window.location.search.includes('edit=')) window.location = '{{ route('users.index') }}';
-        }
+
+        document.addEventListener('click', function (event) {
+            const openTrigger = event.target.closest('[data-open-modal]');
+            const closeTrigger = event.target.closest('[data-close-modal]');
+
+            if (openTrigger) {
+                const modal = document.getElementById(openTrigger.dataset.openModal);
+                if (modal) modal.classList.add('open');
+            }
+
+            if (closeTrigger) {
+                closeModal(closeTrigger.dataset.closeModal);
+
+                if (closeTrigger.dataset.closeModal === 'reset-password-confirmation-modal') {
+                    pendingResetForm = null;
+                }
+
+                if (window.location.search.includes('edit=') && closeTrigger.dataset.closeModal === 'user-modal') {
+                    window.location = '{{ route('users.index') }}';
+                }
+            }
+
+            if (event.target.classList.contains('modal-backdrop')) {
+                event.target.classList.remove('open');
+                event.target.setAttribute('aria-hidden', 'true');
+
+                if (event.target.id === 'reset-password-confirmation-modal') {
+                    pendingResetForm = null;
+                }
+
+                if (window.location.search.includes('edit=') && event.target.id === 'user-modal') {
+                    window.location = '{{ route('users.index') }}';
+                }
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Escape') {
+                return;
+            }
+
+            if (confirmationModal && confirmationModal.classList.contains('open')) {
+                closeModal('reset-password-confirmation-modal');
+                pendingResetForm = null;
+            }
+
+            if (resultModal && resultModal.classList.contains('open')) {
+                closeModal('reset-password-result-modal');
+            }
+        });
+
+        @if (session()->has('reset_password_credentials'))
+            if (resultModal) {
+                resultModal.classList.add('open');
+                resultModal.setAttribute('aria-hidden', 'false');
+            }
+        @endif
     });
 </script>
 @endsection

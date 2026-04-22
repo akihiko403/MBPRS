@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -51,5 +52,16 @@ class ProfileController extends Controller
         $user->save();
 
         return back()->with('success', 'Profile updated successfully.');
+    }
+
+    public function resetPassword(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $user->forceFill([
+            'password' => Hash::make('password123'),
+        ])->save();
+
+        return back()->with('success', 'Password has been reset successfully!');
     }
 }

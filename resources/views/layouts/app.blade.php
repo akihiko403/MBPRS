@@ -142,6 +142,7 @@
         .login-shell { min-height:100vh; display:grid; place-items:center; padding:32px; background:linear-gradient(135deg,#0d2b25,#2f6e5f 52%,#f0f5f1 52%); }
         .login-card { width:min(980px,100%); display:grid; grid-template-columns:1.1fr .9fr; background:#fff; border-radius:28px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.18); }
         .login-art { background:linear-gradient(180deg,#173932,#28584e); color:#e9f7f2; padding:42px; }
+        .login-art-divider { width:100%; height:1px; background:rgba(255,255,255,.78); }
         .login-form { padding:42px; }
         .global-modal-backdrop { position:fixed; inset:0; background:rgba(8, 20, 18, .55); display:none; align-items:center; justify-content:center; padding:24px; z-index:2000; }
         .global-modal-backdrop.open { display:flex; }
@@ -175,7 +176,7 @@
                 @endif
                 <span class="brand-title">
                     {{ $systemSettings->system_name }}
-                    <span class="brand-subtitle">Municipality of Lebak</span>
+                    <span class="brand-subtitle">{{ $systemSettings->system_subheader ?? 'Municipality of Lebak' }}</span>
                 </span>
             </div>
             <div class="sidebar-divider" aria-hidden="true"></div>
@@ -269,13 +270,17 @@
             const deleteSubmit = document.getElementById('delete-confirmation-submit');
             const deleteCancel = document.getElementById('delete-confirmation-cancel');
             const saveModal = document.getElementById('save-confirmation-modal');
+            const saveTitle = document.getElementById('save-confirmation-title');
             const saveMessage = document.getElementById('save-confirmation-message');
             const saveSubmit = document.getElementById('save-confirmation-submit');
             const saveCancel = document.getElementById('save-confirmation-cancel');
             let pendingDeleteForm = null;
             let pendingSaveForm = null;
+            const defaultSaveTitle = 'Save Changes';
+            const defaultSaveMessage = 'Save these changes?';
+            const defaultSaveLabel = 'Save';
 
-            if (!deleteModal || !deleteMessage || !deleteSubmit || !deleteCancel || !saveModal || !saveMessage || !saveSubmit || !saveCancel) {
+            if (!deleteModal || !deleteMessage || !deleteSubmit || !deleteCancel || !saveModal || !saveTitle || !saveMessage || !saveSubmit || !saveCancel) {
                 return;
             }
 
@@ -288,6 +293,9 @@
             const closeSaveModal = () => {
                 saveModal.classList.remove('open');
                 saveModal.setAttribute('aria-hidden', 'true');
+                saveTitle.textContent = defaultSaveTitle;
+                saveMessage.textContent = defaultSaveMessage;
+                saveSubmit.textContent = defaultSaveLabel;
                 pendingSaveForm = null;
             };
 
@@ -309,7 +317,9 @@
                 if (form.hasAttribute('data-confirm-save') && form.dataset.saveConfirmed !== 'true') {
                     event.preventDefault();
                     pendingSaveForm = form;
-                    saveMessage.textContent = form.getAttribute('data-save-message') || 'Save these changes?';
+                    saveTitle.textContent = form.getAttribute('data-save-title') || defaultSaveTitle;
+                    saveMessage.textContent = form.getAttribute('data-save-message') || defaultSaveMessage;
+                    saveSubmit.textContent = form.getAttribute('data-save-confirm-label') || defaultSaveLabel;
                     saveModal.classList.add('open');
                     saveModal.setAttribute('aria-hidden', 'false');
                 }

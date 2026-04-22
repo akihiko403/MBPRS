@@ -155,8 +155,15 @@ class UserManagementController extends Controller
             return $redirect;
         }
 
-        $user->forceFill(['password' => Hash::make('password123')])->save();
+        $defaultPassword = 'password123';
 
-        return back()->with('success', 'Password reset to password123.');
+        $user->forceFill(['password' => Hash::make($defaultPassword)])->save();
+
+        return back()
+            ->with('success', 'Password has been reset successfully!')
+            ->with('reset_password_credentials', [
+                'username' => $user->username,
+                'password' => $defaultPassword,
+            ]);
     }
 }

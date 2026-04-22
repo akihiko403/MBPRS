@@ -34,12 +34,14 @@ class SettingsController extends Controller
 
         $validated = $request->validate([
             'system_name' => ['required', 'string', 'max:255'],
+            'system_subheader' => ['nullable', 'string', 'max:255'],
             'system_description' => ['nullable', 'string', 'max:1000'],
             'system_logo' => ['nullable', 'image', 'max:2048'],
         ]);
 
         $settings->fill([
             'system_name' => $validated['system_name'],
+            'system_subheader' => $validated['system_subheader'] ?? null,
             'system_description' => $validated['system_description'] ?? null,
         ]);
 

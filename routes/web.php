@@ -24,6 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/profile', ProfileController::class)->name('profile');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/reset-password', [ProfileController::class, 'resetPassword'])->name('profile.reset-password');
     Route::get('/settings', SettingsController::class)->name('settings');
     Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::get('/backup-restore', [BackupRestoreController::class, 'index'])->name('backup-restore.index');
@@ -60,7 +61,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/users/trash/{id}/restore', [UserManagementController::class, 'restore'])->name('users.restore');
     Route::delete('/users/trash/{id}/force-delete', [UserManagementController::class, 'forceDelete'])->name('users.force-delete');
     Route::patch('/users/{user}/toggle', [UserManagementController::class, 'toggle'])->name('users.toggle');
-    Route::patch('/users/{user}/reset-password', [UserManagementController::class, 'reset-password'])->name('users.reset-password');
+    Route::patch('/users/{user}/reset-password', [UserManagementController::class, 'resetPassword'])->name('users.reset-password');
 });
 
 

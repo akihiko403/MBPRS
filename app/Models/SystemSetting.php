@@ -9,6 +9,7 @@ class SystemSetting extends Model
 {
     protected $fillable = [
         'system_name',
+        'system_subheader',
         'system_description',
         'system_logo_path',
     ];
@@ -17,6 +18,7 @@ class SystemSetting extends Model
     {
         return [
             'system_name' => 'Municipal Building Permit Repository System',
+            'system_subheader' => 'Municipality of Lebak',
             'system_description' => 'Securely manage building permit encoding, approvals, reporting, and records access in one municipal repository.',
             'system_logo_path' => null,
         ];

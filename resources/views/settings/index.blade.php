@@ -11,7 +11,7 @@
     <h3 style="margin:0 0 6px;">System Settings</h3>
     <div class="muted" style="margin-bottom:20px;">Update the identity shown across the system.</div>
 
-    <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data" data-confirm-save data-save-message="Save these system settings?">
         @csrf
         @method('PATCH')
 
@@ -34,12 +34,17 @@
 
             <div class="settings-fields">
                 <div>
-                    <label>System Name</label>
+                    <label>Name</label>
                     <input type="text" name="system_name" value="{{ old('system_name', $settings->system_name) }}" required>
                 </div>
 
                 <div>
-                    <label>System Description</label>
+                    <label>Sub Header</label>
+                    <input type="text" name="system_subheader" value="{{ old('system_subheader', $settings->system_subheader ?? 'Municipality of Lebak') }}" placeholder="Municipality of Lebak">
+                </div>
+
+                <div>
+                    <label>Description</label>
                     <textarea name="system_description" placeholder="Short description shown on login and system areas.">{{ old('system_description', $settings->system_description) }}</textarea>
                 </div>
             </div>

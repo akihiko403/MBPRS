@@ -36,9 +36,10 @@
             </div>
             <h1 style="font-size:2rem; margin-top:0;">{{ $systemSettings->system_name }}</h1>
             <p style="margin:-4px 0 14px; font-size:0.95rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:rgba(233, 247, 242, 0.78);">
-                Municipality of Lebak
+                {{ $systemSettings->system_subheader ?? 'Municipality of Lebak' }}
             </p>
-            <p style="line-height:1.8;">{{ $systemSettings->system_description }}</p>
+            <div class="login-art-divider" aria-hidden="true"></div>
+            <p style="line-height:1.8; margin-top:14px;">{{ $systemSettings->system_description }}</p>
 
         </section>
         <section class="login-form">
