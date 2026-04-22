@@ -16,8 +16,7 @@ use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
-    Route::redirect('/', '/login');
-    Route::get('/login', [AuthController::class, 'create'])->name('login');
+    Route::get('/', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [AuthController::class, 'store'])->name('login.attempt');
 });
 
